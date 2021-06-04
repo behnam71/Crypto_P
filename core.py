@@ -38,14 +38,49 @@ def create_env(config):
 
     action_scheme = default.actions.BSH(cash=cash,
                                         asset=asset).attach(reward_scheme)
+    
+    
+    import ray.rllib.agents.ppo as ppo
 
-    env = default.create(feed=feed,
-                         portfolio=portfolio,
-                         action_scheme=action_scheme,
-                         reward_scheme=reward_scheme,
-                         window_size=config["window_size"],
-                         max_allowed_loss=0.6)
-    return env
+# Get checkpoint
+checkpoints = analysis.get_trial_checkpoints_paths(
+    trial=analysis.get_best_trial("episode_reward_mean"),
+    metric="episode_reward_mean"
+)
+checkpoint_path = checkpoints[0][0]
+
+# Restore agent
+agent = ppo.PPOTrainer(env="TradingEnv",
+                       config={"env_config": {"window_size": 25},
+                               "framework": "torch",
+                               "log_level": "DEBUG",
+                               "ignore_worker_failures": True,
+                               "num_workers": 1,
+                               "num_gpus": 0,
+                               "clip_rewards": True,
+                               "lr": 8e-6,
+                               "lr_schedule": [[0, 1e-1],
+                                               [int(1e2), 1e-2],
+                                               [int(1e3), 1e-3],
+                                               [int(1e4), 1e-4],
+                                               [int(1e5), 1e-5],
+                                               [int(1e6), 1e-6],
+                                               [int(1e7), 1e-7]],
+                               "gamma": 0,
+                               "observation_filter": "MeanStdFilter",
+                               "lambda": 0.72,
+                               "vf_loss_coeff": 0.5,
+                               "entropy_coeff": 0.01})
+agent.restore(checkpoint_path)
+
+env = default.create(feed=feed,
+                     portfolio=portfolio,
+                     action_scheme=action_scheme,
+                     reward_scheme=reward_scheme,
+                     window_size=config["window_size"],
+                     max_allowed_loss=0.6)
+
+return env
 
 
 register_env("TradingEnv", create_env)
