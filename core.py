@@ -28,12 +28,11 @@ def create_env(config):
     portfolio = Portfolio(USD, [cash,
                                 asset])
 
-    feed = DataFeed([
-        p,
-        p.rolling(window=10).mean().rename("fast"),
-        p.rolling(window=50).mean().rename("medium"),
-        p.rolling(window=100).mean().rename("slow"),
-        p.log().diff().fillna(0).rename("lr")])
+    feed = DataFeed([p,
+                     p.rolling(window=10).mean().rename("fast"),
+                     p.rolling(window=50).mean().rename("medium"),
+                     p.rolling(window=100).mean().rename("slow"),
+                     p.log().diff().fillna(0).rename("lr")])
 
     reward_scheme = default.rewards.PBR(price=p)
 
@@ -51,15 +50,10 @@ def create_env(config):
 
 register_env("TradingEnv", create_env)
 
-
 analysis = tune.run("PPO",
-                    stop={
-                        "episode_reward_mean": 500
-                    },
+                    stop={"episode_reward_mean": 500},
                     config={"env": "TradingEnv",
-                            "env_config": {
-                                "window_size": 25
-                            },
+                            "env_config": {"window_size": 25},
                             "log_level": "DEBUG",
                             "framework": "torch",
                             "ignore_worker_failures": True,
