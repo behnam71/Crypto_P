@@ -1,7 +1,13 @@
+"""Example of using a custom RNN keras model."""
+import argparse
+import os
+
 import ray
 from ray import tune
 from ray.tune.registry import register_env
-import ray.rllib.agents.ppo as ppo
+from ray.rllib.examples.models.rnn_model import RNNModel, TorchRNNModel
+from ray.rllib.models import ModelCatalog
+from ray.rllib.utils.test_utils import check_learning_achieved
 
 import pandas as pd
 import ta
@@ -13,10 +19,42 @@ from tensortrade.oms.instruments import Instrument
 from tensortrade.oms.services.execution.simulated import execute_order
 from tensortrade.oms.instruments import USD, BTC
 from tensortrade.oms.wallets import Wallet, Portfolio
-
-import tensortrade.env.default as default
 from tensortrade.env.default.renderers import PlotlyTradingChart, FileLogger, ScreenLogger
+import tensortrade.env.default as default
 
+
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "--run",
+    type=str,
+    default="PPO",
+    help="The RLlib-registered algorithm to use.")
+parser.add_argument("--num-cpus", type=int, default=0)
+parser.add_argument(
+    "--framework",
+    choices=["tf", "tf2", "tfe", "torch"],
+    default="torch",
+    help="The DL framework specifier.")
+parser.add_argument(
+    "--as-test",
+    action="store_true",
+    help="Whether this script should be run as a test: --stop-reward must "
+    "be achieved within --stop-timesteps AND --stop-iters.")
+parser.add_argument(
+    "--stop-iters",
+    type=int,
+    default=100,
+    help="Number of iterations to train.")
+parser.add_argument(
+    "--stop-timesteps",
+    type=int,
+    default=100000,
+    help="Number of timesteps to train.")
+parser.add_argument(
+    "--stop-reward",
+    type=float,
+    default=90.0,
+    help="Reward at which we stop training.")
 
 def load_csv(filename):
     df = pd.read_csv(filename, low_memory=False, index_col=[0])
@@ -51,83 +89,93 @@ def load_csv(filename):
 
 
 def main():
+    args = parser.parse_args()
+
+    ray.init(num_cpus=args.num_cpus or None)
+
+    ModelCatalog.register_custom_model(
+        "rnn", TorchRNNModel if args.framework == "torch" else RNNModel)
 
     register_env("TradingEnv", create_env)
 
     analysis = tune.run(
         "PPO",
         stop={
-            "episode_reward_mean": 500
+            "training_iteration": args.stop_iters,
+            "timesteps_total": args.stop_timesteps,
+            "episode_reward_mean": args.stop_reward,        
         },
-        config={
-            "env": "TradingEnv",
+
+        config = {
+            "env": 'TradingEnv',
             "env_config": {
-                "window_size": 24
+                "window_size": 24,
+                "repeat_delay": 2,
             },
             "log_level": "DEBUG",
-            "framework": "torch",
-            "ignore_worker_failures": True,
+            "gamma": 0.9,
+            # Use GPUs iff `RLLIB_NUM_GPUS` env var set to > 0.
+            "num_gpus": int(os.environ.get("RLLIB_NUM_GPUS", "0")),
             "num_workers": 1,
-            "num_gpus": 0,
-            "clip_rewards": True,
-            "lr": 8e-6,
-            "lr_schedule": [
-                [0, 1e-1],
-                [int(1e2), 1e-2],
-                [int(1e3), 1e-3],
-                [int(1e4), 1e-4],
-                [int(1e5), 1e-5],
-                [int(1e6), 1e-6],
-                [int(1e7), 1e-7]
-            ],
-            "gamma": 0,
-            "observation_filter": "MeanStdFilter",
-            "lambda": 0.72,
-            "vf_loss_coeff": 0.5,
-            "entropy_coeff": 0.01
+            "entropy_coeff": 0.001,
+            "num_sgd_iter": 5,
+            "vf_loss_coeff": 1e-5,
+            "model": {
+                "custom_model": "rnn",
+                "max_seq_len": 20,
+                "custom_model_config": {
+                    "cell_size": 32,
+                },
+            },
+            "framework": args.framework,
         },
         checkpoint_at_end=True
     )
 
+    if args.as_test:
+        check_learning_achieved(results, args.stop_reward)
+    ray.shutdown()
+
+    """
+    # Restore agent
+    import ray.rllib.agents.ppo as ppo
+
     # Get checkpoint
     checkpoints = analysis.get_trial_checkpoints_paths(
-        trial=analysis.get_best_trial("episode_reward_mean"),
+        trial=analysis.get_best_trial(metric="episode_reward_mean", , mode="min"),
         metric="episode_reward_mean"
     )
     checkpoint_path = checkpoints[0][0]
 
-    # Restore agent
     agent = ppo.PPOTrainer(
         env="TradingEnv",
-        config={
+        config = {
+            "env": args.env,
             "env_config": {
                 "window_size": 24
+                "repeat_delay": 2,
             },
-            "framework": "torch",
-            "log_level": "DEBUG",
-            "ignore_worker_failures": True,
+            "gamma": 0.9,
+            # Use GPUs iff `RLLIB_NUM_GPUS` env var set to > 0.
+            "num_gpus": int(os.environ.get("RLLIB_NUM_GPUS", "0")),
             "num_workers": 1,
-            "num_gpus": 0,
-            "clip_rewards": True,
-            "lr": 8e-6,
-            "lr_schedule": [
-                [0, 1e-1],
-                [int(1e2), 1e-2],
-                [int(1e3), 1e-3],
-                [int(1e4), 1e-4],
-                [int(1e5), 1e-5],
-                [int(1e6), 1e-6],
-                [int(1e7), 1e-7]
-            ],
-            "gamma": 0,
-            "observation_filter": "MeanStdFilter",
-            "lambda": 0.72,
-            "vf_loss_coeff": 0.5,
-            "entropy_coeff": 0.01
-        }
+            "num_envs_per_worker": 20,
+            "entropy_coeff": 0.001,
+            "num_sgd_iter": 5,
+            "vf_loss_coeff": 1e-5,
+            "model": {
+                "custom_model": "rnn",
+                "max_seq_len": 20,
+                "custom_model_config": {
+                    "cell_size": 32,
+                },
+            },
+            "framework": args.framework,
+        },
     )
 
     agent.restore(checkpoint_path)
+    """
 
 	#Direct Performance and Net Worth Plotting
     performance = pd.DataFrame.from_dict(env.action_scheme.portfolio.performance, orient='index')
@@ -181,7 +229,7 @@ def create_env(config):
         # create a new directory if doesn't exist, None for no directory.
         path="training_logs"
     )
-    
+
     renderer_feed = DataFeed([
         Stream.source(price_history[c].tolist(), dtype="float").rename(c) for c in price_history]
     )
