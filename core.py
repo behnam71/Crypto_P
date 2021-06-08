@@ -7,7 +7,6 @@ import pandas as pd
 import ta
 from IPython.display import display
 
-
 from tensortrade.feed.core import Stream, DataFeed, NameSpace
 from tensortrade.oms.exchanges import Exchange
 from tensortrade.oms.instruments import Instrument
@@ -17,7 +16,6 @@ from tensortrade.oms.wallets import Wallet, Portfolio
 
 import tensortrade.env.default as default
 from tensortrade.env.default.renderers import PlotlyTradingChart, FileLogger, ScreenLogger
-
 
 
 def load_csv(filename):
