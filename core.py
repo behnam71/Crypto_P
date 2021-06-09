@@ -188,8 +188,10 @@ def main():
 ##Create Data Feeds
 def create_env(config):
     df = load_csv('data.csv')
-
+    """
     dataset = ta.add_all_ta_features(df, 'open', 'high', 'low', 'close', 'volume', fillna=True)
+    """
+    dataset = df
     display(dataset.head(7))
 
     #Create Chart Price History Data
