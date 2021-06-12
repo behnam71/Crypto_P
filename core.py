@@ -39,7 +39,7 @@ from tensortrade.oms.orders import (
     TradeType
 )
 
-from BinanceData import fetchData
+from data_downloader import fetchData
 
 
 parser = argparse.ArgumentParser()
