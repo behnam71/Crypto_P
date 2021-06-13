@@ -95,7 +95,7 @@ def main():
     print("Training on " + (str)(trainLength) + " rows")
     print("Testing on " + (str)(dataEnd) + " rows")
     # Used for benchmark
-    train_Data = candles[50:-data_End]
+    train_Data = candles[:-data_End]
     train_Data.set_index('date', inplace = True)
     test_Data = candles[-data_End:]
     test_Data.set_index('date', inplace = True)
@@ -232,8 +232,7 @@ def main():
     )
     # Restore agent using best episode reward mean
     agent.restore(checkpoint_path)
-    ###########################################
-
+    
     # Instantiate the testing environment
     # Must have same settings for window_size and max_allowed_loss as the training env
     test_env = create_env({
@@ -259,13 +258,12 @@ def main():
 ##Create Data Feeds
 def create_env(config,data):
     # Use config param to decide which data set to use
-    # Reserve 50 rows of data to fill in NaN values
     if config["train"] == True:
-    	df = data[50:-data_End]; env_Data = candles[50:-data_End]
+    	df = data[:-data_End]; env_Data = candles[:-data_End]
     	ta_Data = data[:-data_End]
     else:
     	df = data[-data_End:]; env_Data = candles[-data_End:]
-    	ta_Data = data[-data_End-50:]
+    	ta_Data = data[-data_End:]
 
     #Create Chart Price History Data
     price_history = data[['date', 'open', 'high', 'low', 'close', 'volume']]  # chart data
@@ -297,8 +295,6 @@ def create_env(config,data):
     data = data.add_prefix(coin + ":")
     """
     display(data.head(7))
-    # Drop first 50 rows from dataset
-    dataset = dataset.iloc[50:]
 
     with NameSpace("binance"):
         streams = [
