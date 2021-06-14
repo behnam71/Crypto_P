@@ -370,13 +370,11 @@ def render_env(env, agent, lstm, data, asset):
     env.render()
     benchmark(comparison_list = networth, data_used = data, coin = asset)   
 
-
 # === CALLBACK ===
 def get_net_worth(info):
     # info is a dict containing: env, policy and info["episode"] is an evaluation episode
     episode = info["episode"]
     episode.custom_metrics["net_worth"] = episode.last_info_for()["net_worth"]
-
 
 
 if __name__ == "__main__":
