@@ -262,6 +262,7 @@ def main():
                 chart_renderer
             ]
         )
+
         return env
 
     register_env("TradingEnv", create_env)
@@ -280,6 +281,7 @@ def main():
     )
 
     ray.init(num_cpus=args.num_cpus or None)
+
     ModelCatalog.register_custom_model(
         "rnn", TorchRNNModel if args.framework == "torch" else RNNModel)
 
@@ -289,7 +291,7 @@ def main():
         "PPO",
         # https://docs.ray.io/en/master/tune/api_docs/stoppers.html
         #stop = ExperimentPlateauStopper(metric="episode_reward_mean", std=0.1, top=10, mode="max", patience=0),
-        stop = {"training_iteration": maxIter},
+        stop = {"training_iteration": 10},
         #stop = {"episode_len_mean" : (len(data) - dataEnd) - 1},
         config=config,
         checkpoint_at_end=True,
@@ -302,13 +304,17 @@ def main():
         #max_failures=5,
     )
 
+    #if args.as_test:
+        #check_learning_achieved(analysis, args.stop_reward)
+    ray.shutdown()
+
     ###########################################
     # === ANALYSIS FOR TESTING ===
     # https://docs.ray.io/en/master/tune/api_docs/analysis.html
     # Get checkpoint based on highest episode_reward_mean
     checkpoint_path = analysis.get_trial_checkpoints_paths(
-        trial=analysis.get_best_trial("episode_reward_mean"), 
-        metric="episode_reward_mean", 
+        trial=analysis.get_best_trial("episode_reward_mean", mode="max"),
+        metric="training_iteration", 
     )
     checkpoint_path = checkpoints[0][0]
     print("Checkpoint path at:")
@@ -337,10 +343,6 @@ def main():
     test_Data.set_index('date', inplace = True)
     render_env(test_env, agent, test_Data, args.c_Instrument)
 
-    if args.as_test:
-        check_learning_achieved(results, args.stop_reward)
-    ray.shutdown()
-
 	#Direct Performance and Net Worth Plotting
     performance = pd.DataFrame.from_dict(TradingEnv.action_scheme.portfolio.performance, orient='index')
     performance.plot()
@@ -368,6 +370,7 @@ def render_env(env, agent, lstm, data, asset):
     env.render()
     benchmark(comparison_list = networth, data_used = data, coin = asset)   
 
+	
 # === CALLBACK ===
 def get_net_worth(info):
     # info is a dict containing: env, policy and info["episode"] is an evaluation episode
