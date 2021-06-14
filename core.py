@@ -262,7 +262,6 @@ def main():
                 chart_renderer
             ]
         )
-
         return env
 
     register_env("TradingEnv", create_env)
@@ -281,7 +280,6 @@ def main():
     )
 
     ray.init(num_cpus=args.num_cpus or None)
-
     ModelCatalog.register_custom_model(
         "rnn", TorchRNNModel if args.framework == "torch" else RNNModel)
 
