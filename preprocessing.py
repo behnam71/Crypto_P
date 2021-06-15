@@ -1,10 +1,10 @@
 import pandas as pd
 
 
-def load_dataset(filename):
-    df = pd.read_csv(filename, low_memory=False, index_col=[0])
+def load_dataset(*, file_name: str) -> pd.DataFrame:
+    df = pd.read_csv(file_name, low_memory=False, index_col=[0])
     """
-    df = pd.read_csv(filename, skiprows=1)
+    df = pd.read_csv(file_name, skiprows=1)
     df.drop(columns=['unix', 'symbol', 'Volume BTC', 'tradecount'], inplace=True)
     df = df.rename({Volume USDT: "volume"}, axis=1)
 
@@ -28,6 +28,6 @@ def load_dataset(filename):
     
     # Format timestamps as you want them to appear on the chart buy/sell marks.
     df['date'] = df['date'].dt.strftime('%Y-%m-%d %I:%M %p')
-    df.to_csv(filename)
+    df.to_csv(file_name)
     """
     return df
