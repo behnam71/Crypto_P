@@ -26,7 +26,6 @@ from tensortrade.feed.core import Stream, DataFeed, NameSpace
 from tensortrade.env.default.renderers import PlotlyTradingChart, FileLogger, ScreenLogger
 from tensortrade.env.default.actions import TensorTradeActionScheme, ManagedRiskOrders
 from tensortrade.env.default.rewards import TensorTradeRewardScheme, SimpleProfit, RiskAdjustedReturns
-from tensortrade.env.default.renderers import PlotlyTradingChart, FileLogger
 from tensortrade.env.generic import ActionScheme, TradingEnv, Renderer
 from tensortrade.oms.services.execution.simulated import execute_order
 from tensortrade.core import Clock
@@ -42,6 +41,7 @@ from tensortrade.oms.orders import (
 )
 
 from preprocessing import load_dataset
+from Benchmark_Comparison import benchmark
 #from BinanceData import fetchData
 
 
@@ -156,8 +156,8 @@ def main():
         "framework": args.framework,
     }
 
-    #Setup Trading Environment
-    ##Create Data Feeds
+    # Setup Trading Environment
+    ## Create Data Feeds
     def create_env(config):
         coin = "BTC"
         coinInstrument = BTC
@@ -231,20 +231,9 @@ def main():
         	                              )
 
         # === RENDERER ===
+        # Uses the OHCLV data passed to envData
         renderer_feed = DataFeed([
             Stream.source(env_Data[c].tolist(), dtype="float").rename(c) for c in env_Data]
-        )
-
-        #Environment with Multiple Renderers
-        chart_renderer = PlotlyTradingChart(
-            display=True,
-            height=800, # None for 100% height.
-            save_format="html",
-            auto_open_html=True,
-        )
-        file_logger = FileLogger(
-            # omit or None for automatic file name.
-            filename="example.log", path="training_logs"
         )
 
         # === RESULT === 
@@ -366,7 +355,7 @@ def main():
     test_Data.set_index('date', inplace = True)
     render_env(test_env, agent, test_Data, args.c_Instrument)
 
-	#Direct Performance and Net Worth Plotting
+	# Direct Performance and Net Worth Plotting
     performance = pd.DataFrame.from_dict(TradingEnv.action_scheme.portfolio.performance, orient='index')
     performance.plot()
 
