@@ -11,7 +11,7 @@ import ccxt.async_support as ccxt  # noqa: E402
 
 async def test():
     # instantiate exchanges
-    exchange = ccxt.phemex({
+    exchange = ccxt.binance({
         'enableRateLimit': True,
         'apiKey': '1f5e94b8-fc56-4e7b-aeeb-b66a46c0bd18',  
         'secret': 'dMtx9ZDyGXqXRhUwsz1INL8tVU8UZ5Xk9ZkZZ4QchfgyZThkNDhhOC1hNjE1LTQzOWMtYTE4MC1jYjVmMGMxZjQ2ZTA',
