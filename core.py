@@ -42,45 +42,46 @@ from tensortrade.oms.orders import (
 
 from preprocessing import load_dataset
 from Benchmark_Comparison import benchmark
-#from BinanceData import fetchData
 
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
     "--alg",
     type=str,
+    choices=["PPO", "A2C", "DQN"],
     default="PPO",
     help="The RLlib-registered algorithm to use.")
 parser.add_argument(
     "--c_Instrument",
     type=str,
+    choices=["BTC", "ETH", "DOGE"],
     default="BTC")
-parser.add_argument("--num-cpus", type=int, default=0)
+parser.add_argument("--num-cpus", type=int, default=2)
 parser.add_argument(
     "--framework",
     choices=["tf", "tf2", "tfe", "torch"],
     default="torch",
     help="The DL framework specifier.")
 parser.add_argument(
-    "--as-test",
-    action="store_true",
-    help="Whether this script should be run as a test: --stop-reward must "
-    "be achieved within --stop-timesteps AND --stop-iters.")
-parser.add_argument(
-    "--stop-iters",
+    "--stop_iters",
     type=int,
     default=100,
     help="Number of iterations to train.")
 parser.add_argument(
-    "--stop-timesteps",
+    "--stop_timesteps",
     type=int,
     default=100000,
     help="Number of timesteps to train.")
 parser.add_argument(
-    "--stop-reward",
+    "--stop_reward",
     type=float,
     default=9000.0,
     help="Reward at which we stop training.")
+parser.add_argument(
+    "--as_test",
+    action="store_true",
+    help="Whether this script should be run as a test: --stop-reward must "
+    "be achieved within --stop-timesteps AND --stop-iters.")
 
 def data_loading():
     # amount=1 -> 500 rows of data
@@ -410,4 +411,8 @@ if __name__ == "__main__":
     # To prevent CUDNN_STATUS_ALLOC_FAILED error
     tf.config.experimental.set_memory_growth(tf.config.experimental.list_physical_devices('GPU')[0], True)
     start()
+
     # tensorboard --logdir=C:\Users\Stephan\ray_results\PPO
+    # python core.py --alg PPO --c_Instrument BTC --num-cpus 2 --framework torch --stop_iters 100 --stop_timesteps 100000 --stop_reward 9000.0 
+    # python core.py --alg PPO --c_Instrument BTC --num-cpus 2 --framework torch --stop_iters 100 --stop_timesteps 100000 --stop_reward 9000.0 --as_test
+
