@@ -8,6 +8,8 @@ import ta
 from IPython.display import display
 from time import sleep
 
+import tensorflow as tf
+
 import ray
 from ray.rllib.examples.models.rnn_model import RNNModel, TorchRNNModel
 from ray.rllib.models import ModelCatalog
@@ -88,7 +90,7 @@ def data_loading():
     # amount=1 -> 500 rows of data
     # candles = fetchData(symbol=(args.c_Instrument + "USDT"), amount=9, timeframe='4h')
     dataset = load_dataset(file_name='/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/data.csv')
-    candles = dataset[['date', 'open', 'high', 'low', 'close', 'volume']]  # chart data
+    candles = dataset[['date', 'open', 'high', 'low', 'close', 'volume']] # chart data
     # Divide the data in test (last 20%) and training (first 80%)
     data_End = (int)(len(candles)*0.2)
     return dataset, candles, data_End
@@ -245,13 +247,12 @@ def start():
             reward_scheme=reward_scheme,
             feed=feed,
             renderer_feed=renderer_feed,
-            renderer= PlotlyTradingChart(), #PositionChangeChart()
-            window_size=config["window_size"], #part of OBSERVER
-            max_allowed_loss=config["max_allowed_loss"], #STOPPER
+            renderer= PlotlyTradingChart(), # PositionChangeChart()
+            window_size=config["window_size"], # part of OBSERVER
+            max_allowed_loss=config["max_allowed_loss"], # STOPPER
             renderers=[
                 ScreenLogger,
                 FileLogger,
-                chart_renderer
             ]
         )
         return env
@@ -341,7 +342,7 @@ def start():
         test_Data.set_index('date', inplace = True)
         render_env(test_env, agent, test_Data, args.c_Instrument)
 
-    # Direct Performance and Net Worth Plotting
+	# Direct Performance and Net Worth Plotting
     performance = pd.DataFrame.from_dict(TradingEnv.action_scheme.portfolio.performance, orient='index')
     performance.plot()
     portfolio.performance.net_worth.plot()
@@ -399,4 +400,3 @@ if __name__ == "__main__":
     # tensorboard --logdir=C:\Users\Stephan\ray_results\PPO
     # python core.py --alg PPO --c_Instrument BTC --num-cpus 2 --framework torch --stop_iters 100 --stop_timesteps 100000 --stop_reward 9000.0 
     # python core.py --alg PPO --c_Instrument BTC --num-cpus 2 --framework torch --stop_iters 100 --stop_timesteps 100000 --stop_reward 9000.0 --as_test
-	
