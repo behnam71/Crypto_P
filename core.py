@@ -46,7 +46,7 @@ from preprocessing import load_dataset
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
-    "--run",
+    "--alg",
     type=str,
     default="PPO",
     help="The RLlib-registered algorithm to use.")
@@ -81,11 +81,14 @@ parser.add_argument(
     default=9000.0,
     help="Reward at which we stop training.")
 
-
 def data_loading():
     # amount=1 -> 500 rows of data
     # candles = fetchData(symbol=(args.c_Instrument + "USDT"), amount=9, timeframe='4h')
-    dataset = load_dataset('data.csv')
+    s_dir = os.getcwd()
+    os.chdir("/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop")
+    dataset = load_dataset(file_name='data.csv')
+    os.chdir(s_dir)
+    print(os.getcwd())
     candles = dataset[['date', 'open', 'high', 'low', 'close', 'volume']]  # chart data
     # Divide the data in test (last 20%) and training (first 80%)
     data_End = (int)(len(candles)*0.2)
@@ -221,13 +224,19 @@ def main():
 
         # === REWARDSCHEME === 
         # RiskAdjustedReturns rewards depends on return_algorithm and its parameters. SimpleProfit() or RiskAdjustedReturns() or PBR()
+        #reward_scheme = SimpleProfit(window_size=config["window_size"])      
         #reward_scheme = RiskAdjustedReturns(return_algorithm='sortino')#, risk_free_rate=0, target_returns=0)
-        #reward_scheme = RiskAdjustedReturns(return_algorithm='sharpe', risk_free_rate=0, target_returns=0, window_size=config["window_size"])
-        reward_scheme = SimpleProfit(window_size=config["window_size"])      
+        reward_scheme = reward_scheme = RiskAdjustedReturns(return_algorithm='sharpe', 
+        	                                                risk_free_rate=0, 
+        	                                                target_returns=0, 
+        	                                                window_size=config["window_size"]
+        	                                                )     
 
         # === ACTIONSCHEME ===
         # SimpleOrders() or ManagedRiskOrders() or BSH()
-        action_scheme = ManagedRiskOrders(stop = [0.02], take = [0.03], trade_sizes=2, durations=[100])
+        action_scheme = ManagedRiskOrders(stop = [0.02], take = [0.03], 
+        	                              durations=[100], trade_sizes=2
+        	                              )
 
         # === RENDERER ===
         renderer_feed = DataFeed([
@@ -262,7 +271,6 @@ def main():
                 chart_renderer
             ]
         )
-
         return env
 
     register_env("TradingEnv", create_env)
@@ -280,7 +288,8 @@ def main():
         brackets=1
     )
 
-    ray.init(num_cpus=args.num_cpus or None)
+    if not ray.is_initialized():
+        ray.init(local_mode=True)
 
     ModelCatalog.register_custom_model(
         "rnn", TorchRNNModel if args.framework == "torch" else RNNModel)
@@ -288,10 +297,10 @@ def main():
     # === tune.run for Training ===
     # https://docs.ray.io/en/master/tune/api_docs/execution.html
     analysis = tune.run(
-        "PPO",
+        args.alg,
         # https://docs.ray.io/en/master/tune/api_docs/stoppers.html
         #stop = ExperimentPlateauStopper(metric="episode_reward_mean", std=0.1, top=10, mode="max", patience=0),
-        stop = {"training_iteration": 10},
+        stop = {"training_iteration": 22},
         #stop = {"episode_len_mean" : (len(data) - dataEnd) - 1},
         config=config,
         checkpoint_at_end=True,
@@ -306,22 +315,22 @@ def main():
 
     #if args.as_test:
         #check_learning_achieved(analysis, args.stop_reward)
-    ray.shutdown()
 
     ###########################################
     # === ANALYSIS FOR TESTING ===
     # https://docs.ray.io/en/master/tune/api_docs/analysis.html
     # Get checkpoint based on highest episode_reward_mean
-    checkpoint_path = analysis.get_trial_checkpoints_paths(
-        trial=analysis.get_best_trial("episode_reward_mean", mode="max"),
-        metric="training_iteration", 
-    )
+    checkpoint_path = analysis.get_best_checkpoint(trial=analysis.get_best_trial("episode_reward_mean"), 
+    	                                           metric="episode_reward_mean",
+    	                                           mode="max"
+    	                                           ) 
+
     checkpoint_path = checkpoints[0][0]
     print("Checkpoint path at:")
     print(checkpoint_path)
 
     # === CREATE THE AGENT === 
-    agent = algoTr(
+    agent = args.alg(
         env="TradingEnv", config=config,
     )
     # Restore agent using best episode reward mean
@@ -349,6 +358,8 @@ def main():
 
     portfolio.performance.net_worth.plot()
 
+    if ray.is_initialized():
+        ray.shutdown()
 
 def render_env(env, agent, lstm, data, asset):
     # Run until done == True
@@ -370,7 +381,6 @@ def render_env(env, agent, lstm, data, asset):
     env.render()
     benchmark(comparison_list = networth, data_used = data, coin = asset)   
 
-	
 # === CALLBACK ===
 def get_net_worth(info):
     # info is a dict containing: env, policy and info["episode"] is an evaluation episode
