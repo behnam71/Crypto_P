@@ -94,16 +94,12 @@ def benchmark(comparison_list, data_used, coin):
         check = ohlc.iat[i, 5]
         if check == 1:
             sell = False
-            if buy == True:
-                ohlc['positions'][i] = 0
-            if buy == False:
-                buy = True
+            if buy == True: ohlc['positions'][i] = 0
+            if buy == False: buy = True
         if check == -1:
             buy = False
-            if sell == True:
-                ohlc['positions'][i] = 0
-            if sell == False:
-                sell = True
+            if sell == True: ohlc['positions'][i] = 0
+            if sell == False: sell = True
 
     # Make ohlc['signal'] for backtesting
     ohlc['signal'] = 0
