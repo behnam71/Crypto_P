@@ -385,7 +385,6 @@ def render_env(env, agent, data, asset):
     # Start with initial capital
     networth = [0]
 
-    acc = []
     _prev_action = np.zeros_like(env.action_space.sample())
     _prev_reward = 0
     info = {}
@@ -406,13 +405,10 @@ def render_env(env, agent, data, asset):
         networth.append(info['net_worth'])
         print("networth:"); print(round(info['net_worth'], 2))
         sleep(0.1)
-    acc.append(total_reward)
-    print("Rollout complete, current mean reward", np.mean(acc))
     
     # Render the test environment
     env.render()
     benchmark(comparison_list = networth, data_used = data, coin = asset)   
-
 
 # === CALLBACK ===
 def get_net_worth(info):
