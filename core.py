@@ -93,7 +93,7 @@ def data_loading():
     data_End = (int)(len(candles)*0.2)
     return dataset, candles, data_End
 
-def main():
+def start():
     args = parser.parse_args()
 
     # Declare when training can stop & Never more than 200
