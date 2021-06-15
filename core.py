@@ -42,6 +42,7 @@ from tensortrade.oms.orders import (
 
 from preprocessing import load_dataset
 from Benchmark_Comparison import benchmark
+#from BinanceData import fetchData
 
 
 parser = argparse.ArgumentParser()
@@ -92,7 +93,7 @@ def data_loading():
     data_End = (int)(len(candles)*0.2)
     return dataset, candles, data_End
 
-def start():
+def main():
     args = parser.parse_args()
 
     # Declare when training can stop & Never more than 200
@@ -275,91 +276,74 @@ def start():
 
     ModelCatalog.register_custom_model(
         "rnn", TorchRNNModel if args.framework == "torch" else RNNModel)
-    """
     # === tune.run for Training ===
     # https://docs.ray.io/en/master/tune/api_docs/execution.html
     analysis = tune.run(
         args.alg,
         # https://docs.ray.io/en/master/tune/api_docs/stoppers.html
-        #stop = ExperimentPlateauStopper(metric="episode_reward_mean", std=0.1, top=10, mode="max", patience=0),
-        stop = {"training_iteration": 22},
-        #stop = {"episode_len_mean" : (len(data) - dataEnd) - 1},
+        #stop=ExperimentPlateauStopper(metric="episode_reward_mean", std=0.1, top=10, mode="max", patience=0),
+        stop={"training_iteration": 22},
+        #stop={"episode_len_mean" : (len(data) - dataEnd) - 1},
         config=config,
         checkpoint_at_end=True,
-        metric = "episode_reward_mean",
-        mode = "max", 
-        checkpoint_freq = 1,  #Necesasry to declare, in combination with Stopper
-        checkpoint_score_attr = "episode_reward_mean",
-        #resume=True
+        metric="episode_reward_mean",
+        mode="max", 
+        checkpoint_freq=1, #Necesasry to declare, in combination with Stopper
+        checkpoint_score_attr="episode_reward_mean",
+        resume=args.as_test,
         #scheduler=asha_scheduler,
         #max_failures=5,
     )
-    """
     #if args.as_test:
         #check_learning_achieved(analysis, args.stop_reward)
 
-    ###########################################
-    # === ANALYSIS FOR TESTING ===
-    # https://docs.ray.io/en/master/tune/api_docs/analysis.html
-    # Get checkpoint based on highest episode_reward_mean
-    analysis = tune.run(
-        args.alg,
-        # https://docs.ray.io/en/master/tune/api_docs/stoppers.html
-        #stop = ExperimentPlateauStopper(metric="episode_reward_mean", std=0.1, top=10, mode="max", patience=0),
-        stop = {"training_iteration": 22},
-        #stop = {"episode_len_mean" : (len(data) - dataEnd) - 1},
-        config=config,
-        checkpoint_at_end=True,
-        metric = "episode_reward_mean",
-        mode = "max", 
-        checkpoint_freq = 1,  #Necesasry to declare, in combination with Stopper
-        checkpoint_score_attr = "episode_reward_mean",
-        resume=True,
-        #scheduler=asha_scheduler,
-        #max_failures=5,
-    )
-    checkpoint_path = analysis.get_best_checkpoint(trial=analysis.get_best_trial("episode_reward_mean"), 
-    	                                       metric="episode_reward_mean",
-    	                                       mode="max"
-    	                                       ) 
-    print("Checkpoint path at:"); print(checkpoint_path)
+    if args.as_test:
+        ###########################################
+        # === ANALYSIS FOR TESTING ===
+        # https://docs.ray.io/en/master/tune/api_docs/analysis.html
+        # Get checkpoint based on highest episode_reward_mean
+        checkpoint_path = analysis.get_best_checkpoint(
+            trial=analysis.get_best_trial("episode_reward_mean"), 
+            metric="episode_reward_mean",
+            mode="max"
+        ) 
+        print("Checkpoint path at:"); print(checkpoint_path)
 
-    # === ALGORITHM SELECTION ===   
-    # Get the correct trainer for the algorithm
-    if (args.alg == "PPO"):
-        algoTr = ppo.PPOTrainer
-    if (args.alg == "DQN"):
-        algoTr = dqn.DQNTrainer
-    if (args.alg == "A2C"):
-        algoTr = a2c.A2CTrainer
+        # === ALGORITHM SELECTION ===   
+        # Get the correct trainer for the algorithm
+        if (args.alg == "PPO"):
+            algTr = ppo.PPOTrainer
+        if (args.alg == "DQN"):
+            algTr = dqn.DQNTrainer
+        if (args.alg == "A2C"):
+            algTr = a2c.A2CTrainer
 
-    # === CREATE THE AGENT === 
-    agent = algoTr(
-        env="TradingEnv", config=config,
-    )
-    # Restore agent using best episode reward mean
-    agent.restore(checkpoint_path)
+        # === CREATE THE AGENT === 
+        agent = algTr(
+            env="TradingEnv", config=config,
+        )
+        # Restore agent using best episode reward mean
+        agent.restore(checkpoint_path)
     
-    # Instantiate the testing environment
-    # Must have same settings for window_size and max_allowed_loss as the training env
-    test_env = create_env({
-    	"window_size": window_size,
-        "max_allowed_loss": max_allowed_loss,
-        "train" : False
-    })
-    # === Render the environments ===
-    _, candles, data_End = data_loading()
-    print("Testing on " + (str)(data_End) + " rows")
-    # Used for benchmark
-    test_Data = pd.DataFrame()
-    test_Data = candles[-data_End:]
-    test_Data.set_index('date', inplace = True)
-    render_env(test_env, agent, test_Data, args.c_Instrument)
+        # Instantiate the testing environment
+        # Must have same settings for window_size and max_allowed_loss as the training env
+        test_env = create_env({
+            "window_size": window_size,
+            "max_allowed_loss": max_allowed_loss,
+            "train" : False
+        })
+        # === Render the environments ===
+        _, candles, data_End = data_loading()
+        print("Testing on " + (str)(data_End) + " rows")
+        # Used for benchmark
+        test_Data = pd.DataFrame()
+        test_Data = candles[-data_End:]
+        test_Data.set_index('date', inplace = True)
+        render_env(test_env, agent, test_Data, args.c_Instrument)
 
-	# Direct Performance and Net Worth Plotting
+    # Direct Performance and Net Worth Plotting
     performance = pd.DataFrame.from_dict(TradingEnv.action_scheme.portfolio.performance, orient='index')
     performance.plot()
-
     portfolio.performance.net_worth.plot()
 
     if ray.is_initialized():
@@ -415,4 +399,4 @@ if __name__ == "__main__":
     # tensorboard --logdir=C:\Users\Stephan\ray_results\PPO
     # python core.py --alg PPO --c_Instrument BTC --num-cpus 2 --framework torch --stop_iters 100 --stop_timesteps 100000 --stop_reward 9000.0 
     # python core.py --alg PPO --c_Instrument BTC --num-cpus 2 --framework torch --stop_iters 100 --stop_timesteps 100000 --stop_reward 9000.0 --as_test
-
+	
