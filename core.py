@@ -393,7 +393,7 @@ def get_net_worth(info):
 
 if __name__ == "__main__":
     # To prevent CUDNN_STATUS_ALLOC_FAILED error
-    tf.config.experimental.set_memory_growth(tf.config.experimental.list_physical_devices('GPU')[0], True)
+    #tf.config.experimental.set_memory_growth(tf.config.experimental.list_physical_devices('GPU')[0], True)
     start()
 
     # tensorboard --logdir=C:\Users\Stephan\ray_results\PPO
