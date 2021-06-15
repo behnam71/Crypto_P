@@ -60,6 +60,7 @@ def scrape_candles_to_csv(filename, exchange_id, max_retries, symbol, timeframe,
     write_to_csv(filename, ohlcv)
     print('Saved', len(ohlcv), 'candles from', exchange.iso8601(ohlcv[0][0]), 'to', exchange.iso8601(ohlcv[-1][0]), 'to', filename)
 
-# -----------------------------------------------------------------------------
-# Binance's BTC/USDT candles start on 2017-08-17
-scrape_candles_to_csv('binance.csv', 'binance', 3, 'BTC/USDT', '1m', '2017-08-17T00:00:00Z', 100)
+def fetchData():
+    # -----------------------------------------------------------------------------
+    # Binance's BTC/USDT candles start on 2017-08-17
+    scrape_candles_to_csv('binance.csv', 'binance', 3, 'BTC/USDT', '1m', '2017-08-17T00:00:00Z', 100)
