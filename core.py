@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import ta
 from IPython.display import display
+from time import sleep
 
 import ray
 from ray.rllib.examples.models.rnn_model import RNNModel, TorchRNNModel
@@ -84,11 +85,7 @@ parser.add_argument(
 def data_loading():
     # amount=1 -> 500 rows of data
     # candles = fetchData(symbol=(args.c_Instrument + "USDT"), amount=9, timeframe='4h')
-    s_dir = os.getcwd()
-    os.chdir("/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop")
-    dataset = load_dataset(file_name='data.csv')
-    os.chdir(s_dir)
-    print(os.getcwd())
+    dataset = load_dataset(file_name='/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/data.csv')
     candles = dataset[['date', 'open', 'high', 'low', 'close', 'volume']]  # chart data
     # Divide the data in test (last 20%) and training (first 80%)
     data_End = (int)(len(candles)*0.2)
@@ -125,7 +122,7 @@ def main():
 
         # === Settings for Rollout Worker processes ===
         # Number of rollout worker actors to create for parallel sampling.
-        "num_workers" : 2, # Amount of CPU cores - 1
+        "num_workers" : 1, # Amount of CPU cores - 1
 
         # === Environment Settings ===
         # Discount factor of the MDP.
@@ -171,9 +168,6 @@ def main():
         dataset.set_index('date', inplace = True)
         candles.set_index('date', inplace = True)
 
-        
-        print("configuration:")
-        print(config)
         # Use config param to decide which data set to use
         if config["train"] == True:
             df = data[:-data_End]; env_Data = candles[:-data_End]
@@ -219,8 +213,6 @@ def main():
         feed = DataFeed(streams)
         # Compiles all the given stream together
         feed.compile()
-        # Print feed for debugging
-        print(feed.next())
 
         # === REWARDSCHEME === 
         # RiskAdjustedReturns rewards depends on return_algorithm and its parameters. SimpleProfit() or RiskAdjustedReturns() or PBR()
@@ -293,7 +285,7 @@ def main():
 
     ModelCatalog.register_custom_model(
         "rnn", TorchRNNModel if args.framework == "torch" else RNNModel)
-
+    """
     # === tune.run for Training ===
     # https://docs.ray.io/en/master/tune/api_docs/execution.html
     analysis = tune.run(
@@ -312,7 +304,7 @@ def main():
         #scheduler=asha_scheduler,
         #max_failures=5,
     )
-
+    """
     #if args.as_test:
         #check_learning_achieved(analysis, args.stop_reward)
 
@@ -320,17 +312,39 @@ def main():
     # === ANALYSIS FOR TESTING ===
     # https://docs.ray.io/en/master/tune/api_docs/analysis.html
     # Get checkpoint based on highest episode_reward_mean
+    analysis = tune.run(
+        args.alg,
+        # https://docs.ray.io/en/master/tune/api_docs/stoppers.html
+        #stop = ExperimentPlateauStopper(metric="episode_reward_mean", std=0.1, top=10, mode="max", patience=0),
+        stop = {"training_iteration": 22},
+        #stop = {"episode_len_mean" : (len(data) - dataEnd) - 1},
+        config=config,
+        checkpoint_at_end=True,
+        metric = "episode_reward_mean",
+        mode = "max", 
+        checkpoint_freq = 1,  #Necesasry to declare, in combination with Stopper
+        checkpoint_score_attr = "episode_reward_mean",
+        resume=True,
+        #scheduler=asha_scheduler,
+        #max_failures=5,
+    )
     checkpoint_path = analysis.get_best_checkpoint(trial=analysis.get_best_trial("episode_reward_mean"), 
-    	                                           metric="episode_reward_mean",
-    	                                           mode="max"
-    	                                           ) 
+    	                                       metric="episode_reward_mean",
+    	                                       mode="max"
+    	                                       ) 
+    print("Checkpoint path at:"); print(checkpoint_path)
 
-    checkpoint_path = checkpoints[0][0]
-    print("Checkpoint path at:")
-    print(checkpoint_path)
+    # === ALGORITHM SELECTION ===   
+    # Get the correct trainer for the algorithm
+    if (args.alg == "PPO"):
+        algoTr = ppo.PPOTrainer
+    if (args.alg == "DQN"):
+        algoTr = dqn.DQNTrainer
+    if (args.alg == "A2C"):
+        algoTr = a2c.A2CTrainer
 
     # === CREATE THE AGENT === 
-    agent = args.alg(
+    agent = algoTr(
         env="TradingEnv", config=config,
     )
     # Restore agent using best episode reward mean
@@ -344,7 +358,7 @@ def main():
         "train" : False
     })
     # === Render the environments ===
-    candles, data_End = data_loading()
+    _, candles, data_End = data_loading()
     print("Testing on " + (str)(data_End) + " rows")
     # Used for benchmark
     test_Data = pd.DataFrame()
@@ -360,26 +374,45 @@ def main():
 
     if ray.is_initialized():
         ray.shutdown()
+        print(env.observer.feed.next())
 
-def render_env(env, agent, lstm, data, asset):
+
+def render_env(env, agent, data, asset):
     # Run until done == True
-    episode_reward = 0
+    print(env.observer.feed.next())
     done = False
     obs = env.reset()
-
     # Start with initial capital
     networth = [0]
 
+    acc = []
+    _prev_action = np.zeros_like(env.action_space.sample())
+    _prev_reward = 0
+    info = {}
+    state = agent.get_policy().get_initial_state()
+    total_reward = 0
     while not done:
-        action = agent.compute_action(obs)
+        action, state, fetch = agent.compute_action(
+            obs, 
+            state=state, 
+            prev_action=_prev_action, 
+            prev_reward=_prev_reward, 
+            info=info
+        )
         obs, reward, done, info = env.step(action)
-        episode_reward += reward
-
+        total_reward = total_reward + reward
+        _prev_reward = reward
+        _prev_action = action
         networth.append(info['net_worth'])
+        print("networth:"); print(round(info['net_worth'], 2))
+        sleep(0.1)
+    acc.append(total_reward)
+    print("Rollout complete, current mean reward", np.mean(acc))
     
     # Render the test environment
     env.render()
     benchmark(comparison_list = networth, data_used = data, coin = asset)   
+
 
 # === CALLBACK ===
 def get_net_worth(info):
