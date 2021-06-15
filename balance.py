@@ -19,13 +19,11 @@ async def test():
             'defaultType': 'swap',
         },
 
-})
-    
+    })
     print(await exchange.fetch_balance({'currency':'BTC'}))
     await exchange.close()  # don't forget to close it when you're done
     return True
 
-  
 if __name__ == '__main__':
     print('CCXT version:', ccxt.__version__)
     print(asyncio.get_event_loop().run_until_complete(test()))
