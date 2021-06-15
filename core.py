@@ -230,8 +230,10 @@ def start():
 
         # === ACTIONSCHEME ===
         # SimpleOrders() or ManagedRiskOrders() or BSH()
-        action_scheme = ManagedRiskOrders(stop = [0.02], take = [0.03], 
-        	                              durations=[100], trade_sizes=2
+        action_scheme = ManagedRiskOrders(stop = [0.02], 
+        	                              take = [0.03], 
+        	                              durations=[100], 
+        	                              trade_sizes=2
         	                              )
 
         # === RENDERER ===
@@ -279,32 +281,36 @@ def start():
         "rnn", TorchRNNModel if args.framework == "torch" else RNNModel)
     # === tune.run for Training ===
     # https://docs.ray.io/en/master/tune/api_docs/execution.html
-    analysis = tune.run(
-        args.alg,
-        # https://docs.ray.io/en/master/tune/api_docs/stoppers.html
-        #stop=ExperimentPlateauStopper(metric="episode_reward_mean", std=0.1, top=10, mode="max", patience=0),
-        stop={"training_iteration": 22},
-        #stop={"episode_len_mean" : (len(data) - dataEnd) - 1},
-        config=config,
-        checkpoint_at_end=True,
-        metric="episode_reward_mean",
-        mode="max", 
-        checkpoint_freq=1, #Necesasry to declare, in combination with Stopper
-        checkpoint_score_attr="episode_reward_mean",
-        resume=args.as_test,
-        #scheduler=asha_scheduler,
-        #max_failures=5,
-    )
-    #if args.as_test:
-        #check_learning_achieved(analysis, args.stop_reward)
+    if not(args.as_test):
+        analysis = tune.run(
+            args.alg,
+            # https://docs.ray.io/en/master/tune/api_docs/stoppers.html
+            #stop=ExperimentPlateauStopper(metric="episode_reward_mean", std=0.1, top=10, mode="max", patience=0),
+            stop={"training_iteration": 22},
+            #stop={"episode_len_mean" : (len(data) - dataEnd) - 1},
+            config=config,
+            checkpoint_at_end=True,
+            metric="episode_reward_mean",
+            mode="max", 
+            checkpoint_freq=1, # Necesasry to declare, in combination with Stopper
+            checkpoint_score_attr="episode_reward_mean",
+            #restore="~/ray_results/PPO",
+            #resume=True,
+            #scheduler=asha_scheduler,
+            #max_failures=5,
+        )
+        #if args.as_test:
+            #check_learning_achieved(analysis, args.stop_reward)
 
-    if args.as_test:
+    else:
         ###########################################
         # === ANALYSIS FOR TESTING ===
         # https://docs.ray.io/en/master/tune/api_docs/analysis.html
         # Get checkpoint based on highest episode_reward_mean
+        from ray.tune import Analysis
+        analysis = Analysis("~/ray_results/PPO")
         checkpoint_path = analysis.get_best_checkpoint(
-            trial=analysis.get_best_trial("episode_reward_mean"), 
+            trial="~/ray_results/PPO/PPO_TradingEnv_dce66_00000_0_2021-06-15_14-32-59", 
             metric="episode_reward_mean",
             mode="max"
         ) 
@@ -344,7 +350,6 @@ def start():
 
     if ray.is_initialized():
         ray.shutdown()
-        print(env.observer.feed.next())
 
 
 def render_env(env, agent, data, asset):
@@ -368,6 +373,7 @@ def render_env(env, agent, data, asset):
             prev_reward=_prev_reward, 
             info=info
         )
+        print("Selected Action:"); print(action)
         obs, reward, done, info = env.step(action)
         total_reward = total_reward + reward
         _prev_reward = reward
@@ -401,3 +407,4 @@ if __name__ == "__main__":
     # tensorboard --logdir=C:\Users\Stephan\ray_results\PPO
     # python core.py --alg PPO --c_Instrument BTC --num-cpus 2 --framework torch --stop_iters 100 --stop_timesteps 100000 --stop_reward 9000.0 
     # python core.py --alg PPO --c_Instrument BTC --num-cpus 2 --framework torch --stop_iters 100 --stop_timesteps 100000 --stop_reward 9000.0 --as_test
+    
