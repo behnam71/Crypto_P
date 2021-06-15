@@ -1,68 +1,46 @@
-import numpy as np
-import pandas as pd
-import math
-import ta
-from datetime import datetime
-from binance.client import Client
+# -*- coding: utf-8 -*-
+import os
+import sys
+import time
+
+# -----------------------------------------------------------------------------
+root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(root + '/python')
+
+# -----------------------------------------------------------------------------
+import ccxt  # noqa: E402
 
 
-# Initialize the client
-client = Client()
+# -----------------------------------------------------------------------------
+# common constants
+msec = 1000; minute = 60 * msec
+hold = 30
 
-def fetchData(symbol, amount, timeframe):
-    """
-    Pandas DataFrame with the latest OHLCV data from Binance.
-    Parameters
-    --------------
-    symbol : string, combine the coin you want to get with the pair. For instance "BTCUSDT" for BTC/USDT.
-    amount : int, the amount of rows that should be returned divided by 500. For instance 2 will return 1000 rows.
-    timeframe : string, the timeframe according to the Binance API. For instance "4h" for the 4 hour candles.
-    """
-    # https://python-binance.readthedocs.io/en/latest/binance.html#binance.client.Client.get_klines
+exchange = ccxt.binance({
+    'rateLimit': 1000,
+    'enableRateLimit': True,
+    # 'verbose': True,
+})
 
-    # ms calculations based on: http://convertlive.com/nl/u/converteren/minuten/naar/milliseconden
-    # 1m = 60000 ms
-    if (timeframe == '1m'):
-        diff = 60000
-    if (timeframe == '5m'):
-        diff = 5 * 60000
+# -----------------------------------------------------------------------------
+from_datetime = '2018-01-01 00:00:00'
+from_timestamp = exchange.parse8601(from_datetime)
+now = exchange.milliseconds()
 
-    # 1h = 3600000 ms
-    if (timeframe == '1h'):
-        diff = 3600000 
-    if (timeframe == '12h'):
-        diff = 12 * 3600000 
+data = []
+while from_timestamp < now:
+    try:
+        print(exchange.milliseconds(), 'Fetching candles starting from', exchange.iso8601(from_timestamp))
+        ohlcvs = exchange.fetch_ohlcv('ETH/BTC', '1m', from_timestamp)
+        print(exchange.milliseconds(), 'Fetched', len(ohlcvs), 'candles')
+        first = ohlcvs[0][0]
+        last = ohlcvs[-1][0]
+        print('First candle epoch', first, exchange.iso8601(first))
+        print('Last candle epoch', last, exchange.iso8601(last))
+        from_timestamp += len(ohlcvs) * minute
+        data += ohlcvs
 
-    # 1d = 86400000 ms
-    if (timeframe == '1d'):
-        diff = 86400000
-    if (timeframe == '1W'):
-        diff = 604800000
-    if (timeframe == '1M'):
-        diff = 2629800000
-
-    # Get current time, by getting the latest candle
-    end = client.get_klines(symbol=symbol, interval=timeframe)[-1][0]
-
-    # The list that keeps track of all the data before converting it to a DataFrame
-    candleList = []
-    for x in range(amount):
-        # Make the list from oldest to newest
-        candleList = client.get_klines(symbol=symbol, interval=timeframe, endTime=end) + candleList
-        # Calculate the end point by using the difference in ms per candle
-        end =  end - diff * 500
-
-    df = pd.DataFrame(candleList)
-    # Only the columns containt the OHLCV data
-    df.drop(columns = [6,7,8,9,10,11],axis=1,inplace=True)
-    df.columns = ["date", "open", "high", "low", "close", "volume"]  
-    # Convert time in ms to datetime
-    df['date'] = pd.to_datetime(df['date'], unit='ms')
-
-    # The default values are string, so convert these to numeric values
-    df['open'] = pd.to_numeric(df['open']); df['high'] = pd.to_numeric(df['high']); df['low'] = pd.to_numeric(df['low'])
-    df['close'] = pd.to_numeric(df['close']); df['volume'] = pd.to_numeric(df['volume'])
-    # Volume in USDT
-    df['volume'] = df.volume * df.close
-    #df.to_csv(r'YOURLOCATION',index=False)
-    return df
+    except (ccxt.ExchangeError, ccxt.AuthenticationError, ccxt.ExchangeNotAvailable, ccxt.RequestTimeout) as error:
+        print('Got an error', type(error).__name__, error.args, ', retrying in', hold, 'seconds...')
+        time.sleep(hold)
+        
