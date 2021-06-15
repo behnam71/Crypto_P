@@ -342,11 +342,6 @@ def start():
         test_Data.set_index('date', inplace = True)
         render_env(test_env, agent, test_Data, args.c_Instrument)
 
-	# Direct Performance and Net Worth Plotting
-    performance = pd.DataFrame.from_dict(TradingEnv.action_scheme.portfolio.performance, orient='index')
-    performance.plot()
-    portfolio.performance.net_worth.plot()
-
     if ray.is_initialized():
         ray.shutdown()
         print(env.observer.feed.next())
@@ -383,7 +378,13 @@ def render_env(env, agent, data, asset):
     
     # Render the test environment
     env.render()
-    benchmark(comparison_list = networth, data_used = data, coin = asset)   
+    benchmark(comparison_list = networth, data_used = data, coin = asset)
+
+    print("net worth Ploting:")
+    # Direct Performance and Net Worth Plotting
+    performance = pd.DataFrame.from_dict(env.action_scheme.portfolio.performance, orient='index')
+    performance.plot()
+    portfolio.performance.net_worth.plot()
 
 # === CALLBACK ===
 def get_net_worth(info):
