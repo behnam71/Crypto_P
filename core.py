@@ -375,19 +375,20 @@ def render_env(env, agent, data, asset):
             prev_reward=_prev_reward, 
             info=info
         )
-        counter += 1
-        print("Selected Action: {}".format(str(action)))
         obs, reward, done, info = env.step(action)
-        print("Next Observer:"); pprint(env.observer.feed.next())
-        print("Reward: {}".format(str(reward)))
         total_reward = total_reward + reward
-        print("Total Reward: {}".format(str(total_reward)))
         _prev_reward = reward
         _prev_action = action
         networth.append(info['net_worth'])
-        print("NetWorth: {}".format(str(round(info['net_worth'], 2))))
-        print("Counter: {}".format(str(counter)))
-        sleep(0.2)
+        counter += 1
+        if (counter % 24) == 0:
+            print("\n\nSelected Action: {}".format(str(action)))
+            print("Next Observer:"); pprint(env.observer.feed.next())
+            print("Reward: {}".format(str(reward)))
+            print("Total Reward: {}".format(str(total_reward)))
+            print("NetWorth: {}".format(str(round(info['net_worth'], 2))))
+            print("Counter: {}".format(str(counter)))
+            sleep(2)
     
     # Render the test environment
     env.render()
