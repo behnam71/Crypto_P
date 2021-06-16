@@ -124,7 +124,6 @@ def start():
         },
         # === RLLib parameters ===
         # https://docs.ray.io/en/master/rllib-training.html#common-parameters
-
         # === Settings for Rollout Worker processes ===
         # Number of rollout worker actors to create for parallel sampling.
         "num_workers" : 1, # Amount of CPU cores - 1
@@ -342,10 +341,10 @@ def start():
         })
         # === Render the environments ===
         _, candles, data_End = data_loading()
-        print("Testing on " + (str)(data_End) + " Rows")
         # Used for benchmark
         test_Data = pd.DataFrame()
         test_Data = candles[-data_End:]
+        print("Testing on " + (str)(data_End) + " Rows")
         test_Data.set_index('date', inplace = True)
         render_env(test_env, agent, test_Data, args.c_Instrument)
 
@@ -381,7 +380,7 @@ def render_env(env, agent, data, asset):
         _prev_action = action
         networth.append(info['net_worth'])
         h_counter += 1
-        if (counter % 24) == 0:
+        if (h_counter % 24) == 0:
             print("\n\nNext Observer:"); pprint(env.observer.feed.next())
             print("Selected Action: {}".format(str(action)))
             print("Reward: {}".format(str(reward)))
