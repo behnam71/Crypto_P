@@ -365,7 +365,7 @@ def render_env(env, agent, data, asset):
     info = {}
     state = agent.get_policy().get_initial_state()
     total_reward = 0
-    counter = 0
+    h_counter = 0
     print("Start Interaction ...")
     while not done:
         action, state, fetch = agent.compute_action(
@@ -380,14 +380,14 @@ def render_env(env, agent, data, asset):
         _prev_reward = reward
         _prev_action = action
         networth.append(info['net_worth'])
-        counter += 1
+        h_counter += 1
         if (counter % 24) == 0:
-            print("\n\nSelected Action: {}".format(str(action)))
-            print("Next Observer:"); pprint(env.observer.feed.next())
+            print("\n\nNext Observer:"); pprint(env.observer.feed.next())
+            print("Selected Action: {}".format(str(action)))
             print("Reward: {}".format(str(reward)))
             print("Total Reward: {}".format(str(total_reward)))
             print("NetWorth: {}".format(str(round(info['net_worth'], 2))))
-            print("Counter: {}".format(str(counter)))
+            print("Counter: {}".format(str(h_counter)))
             sleep(2)
     
     # Render the test environment
