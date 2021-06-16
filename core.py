@@ -7,6 +7,7 @@ import pandas as pd
 import ta
 from IPython.display import display
 from time import sleep
+from pprint import pprint
 
 import tensorflow as tf
 
@@ -131,8 +132,8 @@ def start():
         # === Environment Settings ===
         # Discount factor of the MDP.
         # Lower gamma values will put more weight on short-term gains, whereas higher gamma values will put more weight towards long-term gains. 
-        "gamma" : 0, # default = 0.99 && Use GPUs iff "RLLIB_NUM_GPUS" env var set to > 0.
-        
+        "gamma" : 0, # default = 0.99 
+        #Use GPUs iff "RLLIB_NUM_GPUS" env var set to > 0.
         "num_gpus": int(os.environ.get("RLLIB_NUM_GPUS", "0")),
         "num_sgd_iter": 5,
         #"lr" : 0.01, # default = 0.00005 && Higher lr fits training model better, but causes overfitting 
@@ -314,7 +315,7 @@ def start():
             metric="episode_reward_mean",
             mode="max"
         ) 
-        print("Checkpoint path at:"); print(checkpoint_path)
+        print("Checkpoint Path at: {}".format(str(checkpoint_path)))
 
         # === ALGORITHM SELECTION ===   
         # Get the correct trainer for the algorithm
@@ -341,7 +342,7 @@ def start():
         })
         # === Render the environments ===
         _, candles, data_End = data_loading()
-        print("Testing on " + (str)(data_End) + " rows")
+        print("Testing on " + (str)(data_End) + " Rows")
         # Used for benchmark
         test_Data = pd.DataFrame()
         test_Data = candles[-data_End:]
@@ -354,7 +355,6 @@ def start():
 
 def render_env(env, agent, data, asset):
     # Run until done == True
-    print(env.observer.feed.next())
     done = False
     obs = env.reset()
     # Start with initial capital
@@ -365,6 +365,8 @@ def render_env(env, agent, data, asset):
     info = {}
     state = agent.get_policy().get_initial_state()
     total_reward = 0
+    counter = 0
+    print("Start Interaction ...")
     while not done:
         action, state, fetch = agent.compute_action(
             obs, 
@@ -373,20 +375,25 @@ def render_env(env, agent, data, asset):
             prev_reward=_prev_reward, 
             info=info
         )
-        print("Selected Action:"); print(action)
+        counter += 1
+        print("Selected Action: {}".format(str(action)))
         obs, reward, done, info = env.step(action)
+        print("Next Observer:"); pprint(env.observer.feed.next())
+        print("Reward: {}".format(str(reward)))
         total_reward = total_reward + reward
+        print("Total Reward: {}".format(str(total_reward)))
         _prev_reward = reward
         _prev_action = action
         networth.append(info['net_worth'])
-        print("networth:"); print(round(info['net_worth'], 2))
-        sleep(0.1)
+        print("NetWorth: {}".format(str(round(info['net_worth'], 2))))
+        print("Counter: {}".format(str(counter)))
+        sleep(0.2)
     
     # Render the test environment
     env.render()
     benchmark(comparison_list = networth, data_used = data, coin = asset)
 
-    print("net worth Ploting:")
+    print("NetWorth Ploting:")
     # Direct Performance and Net Worth Plotting
     performance = pd.DataFrame.from_dict(env.action_scheme.portfolio.performance, orient='index')
     performance.plot()
@@ -407,4 +414,3 @@ if __name__ == "__main__":
     # tensorboard --logdir=C:\Users\Stephan\ray_results\PPO
     # python core.py --alg PPO --c_Instrument BTC --num-cpus 2 --framework torch --stop_iters 100 --stop_timesteps 100000 --stop_reward 9000.0 
     # python core.py --alg PPO --c_Instrument BTC --num-cpus 2 --framework torch --stop_iters 100 --stop_timesteps 100000 --stop_reward 9000.0 --as_test
-    
