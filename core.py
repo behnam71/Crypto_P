@@ -89,10 +89,10 @@ parser.add_argument(
 def data_loading():
     # amount=1 -> 500 rows of data
     # candles = fetchData(symbol=(args.c_Instrument + "USDT"), amount=9, timeframe='4h')
-    dataset = load_dataset(file_name='/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/s.csv')
+    dataset = load_dataset(file_name='/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/data.csv')
     candles = dataset[['date', 'open', 'high', 'low', 'close', 'volume']] # chart data
     # Divide the data in test (last 20%) and training (first 80%)
-    data_End = (int)(len(candles)*1)
+    data_End = (int)(len(candles)*0.001)
     return dataset, candles, data_End
 
 def start():
@@ -125,7 +125,7 @@ def start():
         # https://docs.ray.io/en/master/rllib-training.html#common-parameters
         # === Settings for Rollout Worker processes ===
         # Number of rollout worker actors to create for parallel sampling.
-        "num_workers" : 1, # Amount of CPU cores - 1
+        "num_workers" : 2, # Amount of CPU cores - 1
 
         # === Environment Settings ===
         # Discount factor of the MDP.
@@ -167,9 +167,6 @@ def start():
         dataset, candles, data_End = data_loading()
         # Add prefix in case of multiple assets
         data = candles.add_prefix(coin + ":")
-        data.set_index(coin + ':date', inplace = True)
-        dataset.set_index('date', inplace = True)
-        candles.set_index('date', inplace = True)
 
         # Use config param to decide which data set to use
         if config["train"] == True:
@@ -204,6 +201,7 @@ def start():
         dataset = ta.add_all_ta_features(df, 'open', 'high', 'low', 'close', 'volume', fillna=True)
         dataset = dataset.add_prefix(coin + ":")
         """
+        dataset.set_index('date', inplace = True)
         dataset = dataset.add_prefix(coin + ":")
         display(dataset.head(7))
 
@@ -285,7 +283,7 @@ def start():
             args.alg,
             # https://docs.ray.io/en/master/tune/api_docs/stoppers.html
             #stop=ExperimentPlateauStopper(metric="episode_reward_mean", std=0.1, top=10, mode="max", patience=0),
-            stop={"training_iteration": 22},
+            stop={"training_iteration": 20},
             #stop={"episode_len_mean" : (len(data) - dataEnd) - 1},
             config=config,
             checkpoint_at_end=True,
@@ -309,7 +307,7 @@ def start():
         from ray.tune import Analysis
         analysis = Analysis("~/ray_results/PPO")
         checkpoint_path = analysis.get_best_checkpoint(
-            trial="~/ray_results/PPO/PPO_TradingEnv_dce66_00000_0_2021-06-15_14-32-59", 
+            trial="~/ray_results/PPO/PPO_TradingEnv_78abe_00000_0_2021-06-17_19-57-05", 
             metric="episode_reward_mean",
             mode="max"
         ) 
@@ -367,10 +365,10 @@ def render_env(env, agent, data, asset):
     print("Start Interaction ...")
     while not done:
         action, state, fetch = agent.compute_action(
-            obs, 
-            state=state, 
-            prev_action=_prev_action, 
-            prev_reward=_prev_reward, 
+            obs,
+            state=state,
+            prev_action=_prev_action,
+            prev_reward=_prev_reward,
             info=info
         )
         obs, reward, done, info = env.step(action)
@@ -380,13 +378,13 @@ def render_env(env, agent, data, asset):
         networth.append(info['net_worth'])
         h_counter += 1
         if (h_counter % 1) == 0:
-            print("Next Observer:"); pprint(env.observer.feed.next())
+            print("Next Observer:"); print(obs)
             print("Selected Action: {}".format(str(action)))
             print("Reward: {}".format(str(reward)))
             print("Total Reward: {}".format(str(total_reward)))
             print("NetWorth: {}".format(str(round(info['net_worth'], 2))))
             print("Counter: {}\n\n".format(str(h_counter)))
-            sleep(2)
+            sleep(0.2)
     
     # Render the test environment
     env.render()
@@ -409,5 +407,5 @@ if __name__ == "__main__":
     start()
 
     # tensorboard --logdir=C:\Users\Stephan\ray_results\PPO
-    # python core.py --alg PPO --c_Instrument BTC --num_cpus 2 --framework torch --stop_iters 100 --stop_timesteps 100000 --stop_reward 9000.0 
-    # python core.py --alg PPO --c_Instrument BTC --num_cpus 2 --framework torch --stop_iters 100 --stop_timesteps 100000 --stop_reward 9000.0 --as_test
+    # python core.py --alg PPO --c_Instrument BTC --num-cpus 2 --framework torch --stop_iters 100 --stop_timesteps 100000 --stop_reward 9000.0 
+    # python core.py --alg PPO --c_Instrument BTC --num-cpus 2 --framework torch --stop_iters 100 --stop_timesteps 100000 --stop_reward 9000.0 --as_test
