@@ -44,7 +44,6 @@ from tensortrade.oms.orders import (
 )
 
 from preprocessing import load_dataset
-from Benchmark_Comparison import benchmark
 #from BinanceData import fetchData
 
 
@@ -60,7 +59,7 @@ parser.add_argument(
     type=str,
     choices=["BTC", "ETH", "DOGE"],
     default="BTC")
-parser.add_argument("--num-cpus", type=int, default=2)
+parser.add_argument("--num_cpus", type=int, default=2)
 parser.add_argument(
     "--framework",
     choices=["tf", "tf2", "tfe", "torch"],
@@ -90,10 +89,10 @@ parser.add_argument(
 def data_loading():
     # amount=1 -> 500 rows of data
     # candles = fetchData(symbol=(args.c_Instrument + "USDT"), amount=9, timeframe='4h')
-    dataset = load_dataset(file_name='/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/data.csv')
+    dataset = load_dataset(file_name='/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/s.csv')
     candles = dataset[['date', 'open', 'high', 'low', 'close', 'volume']] # chart data
     # Divide the data in test (last 20%) and training (first 80%)
-    data_End = (int)(len(candles)*0.2)
+    data_End = (int)(len(candles)*1)
     return dataset, candles, data_End
 
 def start():
@@ -380,24 +379,22 @@ def render_env(env, agent, data, asset):
         _prev_action = action
         networth.append(info['net_worth'])
         h_counter += 1
-        if (h_counter % 24) == 0:
-            print("\n\nNext Observer:"); pprint(env.observer.feed.next())
+        if (h_counter % 1) == 0:
+            print("Next Observer:"); pprint(env.observer.feed.next())
             print("Selected Action: {}".format(str(action)))
             print("Reward: {}".format(str(reward)))
             print("Total Reward: {}".format(str(total_reward)))
             print("NetWorth: {}".format(str(round(info['net_worth'], 2))))
-            print("Counter: {}".format(str(h_counter)))
+            print("Counter: {}\n\n".format(str(h_counter)))
             sleep(2)
     
     # Render the test environment
     env.render()
-    benchmark(comparison_list = networth, data_used = data, coin = asset)
 
     print("NetWorth Ploting:")
     # Direct Performance and Net Worth Plotting
-    performance = pd.DataFrame.from_dict(env.action_scheme.portfolio.performance, orient='index')
-    performance.plot()
-    portfolio.performance.net_worth.plot()
+    #performance = pd.DataFrame.from_dict(env.action_scheme.portfolio.performance, orient='index')
+    #performance.plot()
 
 # === CALLBACK ===
 def get_net_worth(info):
