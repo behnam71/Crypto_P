@@ -1,6 +1,7 @@
 """Example of using a custom RNN keras model."""
 import argparse
 import os
+import time
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -43,8 +44,10 @@ from tensortrade.oms.orders import (
     TradeType
 )
 
+import multiprocessing
+
 from preprocessing import load_dataset
-#from BinanceData import fetchData
+from continuously_Data import fetchData
 
 
 parser = argparse.ArgumentParser()
@@ -58,42 +61,60 @@ parser.add_argument(
     "--c_Instrument",
     type=str,
     choices=["BTC", "ETH", "DOGE"],
-    default="BTC")
-parser.add_argument("--num_cpus", type=int, default=2)
-parser.add_argument(
-    "--framework",
-    choices=["tf", "tf2", "tfe", "torch"],
-    default="torch",
-    help="The DL framework specifier.")
+    default="BTC"
+    )
+parser.add_argument("--num_cpus", 
+	type=int, 
+	default=2
+	)
 parser.add_argument(
     "--stop_iters",
     type=int,
     default=100,
-    help="Number of iterations to train.")
+    help="Number of iterations to train."
+    )
 parser.add_argument(
-    "--stop_timesteps",
-    type=int,
-    default=100000,
-    help="Number of timesteps to train.")
+    "--framework",
+    choices=["tf", "tf2", "tfe", "torch"],
+    default="torch",
+    help="The DL framework specifier."
+    )
 parser.add_argument(
     "--stop_reward",
     type=float,
     default=9000.0,
-    help="Reward at which we stop training.")
+    help="Reward at which we stop training."
+    )
+parser.add_argument(
+    "--stop_timesteps",
+    type=int,
+    default=100000,
+    help="Number of timesteps to train."
+    )
 parser.add_argument(
     "--as_test",
     action="store_true",
     help="Whether this script should be run as a test: --stop-reward must "
-    "be achieved within --stop-timesteps AND --stop-iters.")
+    "be achieved within --stop-timesteps AND --stop-iters."
+    )
+parser.add_argument(
+    "--online",
+    type=bool,
+    default=False,
+    help="Testing online or offline."
+    )
 
-def data_loading():
-    # amount=1 -> 500 rows of data
-    # candles = fetchData(symbol=(args.c_Instrument + "USDT"), amount=9, timeframe='4h')
+def data_loading(args):
+    percent = 0.9
+    if args.online == True:
+        percent = 1
+    
     dataset = load_dataset(file_name='/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/data.csv')
     candles = dataset[['date', 'open', 'high', 'low', 'close', 'volume']] # chart data
     # Divide the data in test (last 20%) and training (first 80%)
-    data_End = (int)(len(candles)*0.001)
+    data_End = (int)(len(candles)*p)
     return dataset, candles, data_End
+
 
 def start():
     args = parser.parse_args()
@@ -119,7 +140,7 @@ def start():
         "env_config" : {
             "window_size" : window_size,
             "max_allowed_loss" : max_allowed_loss,
-            "train" : True,
+            "train" : args.as_test,
         },
         # === RLLib parameters ===
         # https://docs.ray.io/en/master/rllib-training.html#common-parameters
@@ -164,7 +185,7 @@ def start():
     def create_env(config):
         coin = "BTC"
         coinInstrument = BTC
-        dataset, candles, data_End = data_loading()
+        dataset, candles, data_End = data_loading(args)
         # Add prefix in case of multiple assets
         data = candles.add_prefix(coin + ":")
 
@@ -197,9 +218,10 @@ def start():
 
         """
         # === OBSERVER ===
-        dataset = pd.DataFrame()
-        dataset = ta.add_all_ta_features(df, 'open', 'high', 'low', 'close', 'volume', fillna=True)
-        dataset = dataset.add_prefix(coin + ":")
+        if args.online == True:
+            dataset = pd.DataFrame()
+            dataset = ta.add_all_ta_features(ta_Data, 'open', 'high', 'low', 'close', 'volume', fillna=True)
+            dataset = dataset.add_prefix(coin + ":")
         """
         dataset.set_index('date', inplace = True)
         dataset = dataset.add_prefix(coin + ":")
@@ -336,20 +358,14 @@ def start():
             "max_allowed_loss": max_allowed_loss,
             "train" : False
         })
-        # === Render the environments ===
-        _, candles, data_End = data_loading()
-        # Used for benchmark
-        test_Data = pd.DataFrame()
-        test_Data = candles[-data_End:]
-        print("Testing on " + (str)(data_End) + " Rows")
-        test_Data.set_index('date', inplace = True)
-        render_env(test_env, agent, test_Data, args.c_Instrument)
+
+        render_env(test_env, agent)
 
     if ray.is_initialized():
         ray.shutdown()
 
 
-def render_env(env, agent, data, asset):
+def render_env(env, agent):
     # Run until done == True
     done = False
     obs = env.reset()
@@ -384,7 +400,7 @@ def render_env(env, agent, data, asset):
             print("Total Reward: {}".format(str(total_reward)))
             print("NetWorth: {}".format(str(round(info['net_worth'], 2))))
             print("Counter: {}\n\n".format(str(h_counter)))
-            sleep(0.2)
+            #sleep(2)
     
     # Render the test environment
     env.render()
@@ -404,8 +420,25 @@ def get_net_worth(info):
 if __name__ == "__main__":
     # To prevent CUDNN_STATUS_ALLOC_FAILED error
     #tf.config.experimental.set_memory_growth(tf.config.experimental.list_physical_devices('GPU')[0], True)
-    start()
+    if args.online == True:
+            # creating processes
+            process1 = multiprocessing.Process(target=fetchData, args=(args.c_Instrument + "/USDT", timeframe='4h',))
+            # starting process 1
+            process1.start()
+        while True:
+            modTimesinceEpocORG = os.path.getmtime("data.csv")
+            modificationTimeORG = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(modTimesinceEpocORG))
+            temp = modificationTimeORG
+            while modificationTime == temp:
+                temp = modificationTime
+                modTimesinceEpoc = os.path.getmtime("data.csv")
+                modificationTime = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(modTimesinceEpoc))
+            start()
+    else:
+        start()
 
     # tensorboard --logdir=C:\Users\Stephan\ray_results\PPO
     # python core.py --alg PPO --c_Instrument BTC --num-cpus 2 --framework torch --stop_iters 100 --stop_timesteps 100000 --stop_reward 9000.0 
     # python core.py --alg PPO --c_Instrument BTC --num-cpus 2 --framework torch --stop_iters 100 --stop_timesteps 100000 --stop_reward 9000.0 --as_test
+
+    # python core.py --alg PPO --c_Instrument BTC --num-cpus 2 --framework torch --stop_iters 100 --stop_timesteps 100000 --stop_reward 9000.0 --as_test --online True
