@@ -5,10 +5,10 @@ import time
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-import ta
 from IPython.display import display
 from time import sleep
 from pprint import pprint
+from ta import add_all_ta_features
 
 import tensorflow as tf
 
@@ -103,6 +103,11 @@ parser.add_argument(
     default=False,
     help="Testing online or offline."
     )
+parser.add_argument(
+    "--window_size",
+    type=int,
+    help="Testing online or offline."
+    )
 
 def data_loading(args):
     percent = 0.9
@@ -116,9 +121,7 @@ def data_loading(args):
     return dataset, candles, data_End
 
 
-def start():
-    args = parser.parse_args()
-
+def start(args):
     # Declare when training can stop & Never more than 200
     maxIter = 120
 
@@ -126,7 +129,7 @@ def start():
     # Lookback window for the TradingEnv
     # Increasing this too much can result in errors and overfitting, also increases the duration necessary for training
     # Value needs to be bigger than 1, otherwise it will take nothing in consideration
-    window_size = 10
+    window_size = args.window_size
 
     # 1 meaning he cant lose anything 0 meaning it can lose everything
     # Setting a high value results in quicker training time, but could result in overfitting
@@ -418,11 +421,13 @@ def get_net_worth(info):
 
 
 if __name__ == "__main__":
+    args = parser.parse_args()
+
     # To prevent CUDNN_STATUS_ALLOC_FAILED error
     #tf.config.experimental.set_memory_growth(tf.config.experimental.list_physical_devices('GPU')[0], True)
     if args.online == True:
             # creating processes
-            process1 = multiprocessing.Process(target=fetchData, args=(args.c_Instrument + "/USDT", timeframe='4h',))
+            process1 = multiprocessing.Process(target=fetchData, args=('1m', [args.c_Instrument + "/USDT"], args.window_size,))
             # starting process 1
             process1.start()
         while True:
@@ -438,7 +443,13 @@ if __name__ == "__main__":
         start()
 
     # tensorboard --logdir=C:\Users\Stephan\ray_results\PPO
-    # python core.py --alg PPO --c_Instrument BTC --num-cpus 2 --framework torch --stop_iters 100 --stop_timesteps 100000 --stop_reward 9000.0 
-    # python core.py --alg PPO --c_Instrument BTC --num-cpus 2 --framework torch --stop_iters 100 --stop_timesteps 100000 --stop_reward 9000.0 --as_test
+    # python core.py --alg PPO --c_Instrument BTC --num-cpus 2 --framework torch --stop_iters 100 --stop_timesteps 100000 --stop_reward 9000.0 --window_size 10
+    # python core.py --alg PPO --c_Instrument BTC --num-cpus 2 --framework torch --stop_iters 100 --stop_timesteps 100000 --stop_reward 9000.0 --as_test --window_size 10
 
-    # python core.py --alg PPO --c_Instrument BTC --num-cpus 2 --framework torch --stop_iters 100 --stop_timesteps 100000 --stop_reward 9000.0 --as_test --online True
+    # python core.py --alg PPO --c_Instrument BTC --num-cpus 2 --framework torch --stop_iters 100 --stop_timesteps 100000 --stop_reward 9000.0 --as_test --online True --window_size 10
+
+    # tensorboard --logdir=C:\Users\Stephan\ray_results\PPO
+    # python core.py --alg PPO --c_Instrument BTC --num-cpus 2 --framework torch --stop_iters 100 --stop_timesteps 100000 --stop_reward 9000.0 --window_size 10
+    # python core.py --alg PPO --c_Instrument BTC --num-cpus 2 --framework torch --stop_iters 100 --stop_timesteps 100000 --stop_reward 9000.0 --as_test --window_size 10
+
+    # python core.py --alg PPO --c_Instrument BTC --num-cpus 2 --framework torch --stop_iters 100 --stop_timesteps 100000 --stop_reward 9000.0 --as_test --online True --window_size 10
