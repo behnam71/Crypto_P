@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 import sys
-import csv
+import pandas as pd
 
 # -----------------------------------------------------------------------------
 root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -22,6 +22,7 @@ def retry_fetch_ohlcv(exchange, max_retries, symbol, timeframe, since, limit):
         if num_retries > max_retries:
             raise # Exception('Failed to fetch', timeframe, symbol, 'OHLCV in', max_retries, 'attempts')
 
+
 def scrape_ohlcv(exchange, max_retries, symbol, timeframe, since, limit):
     timeframe_duration_in_seconds = exchange.parse_timeframe(timeframe)
     timeframe_duration_in_ms = timeframe_duration_in_seconds * 1000
@@ -39,10 +40,11 @@ def scrape_ohlcv(exchange, max_retries, symbol, timeframe, since, limit):
             print(len(all_ohlcv), 'candles in total from', exchange.iso8601(fetch_since))
     return exchange.filter_by_since_limit(all_ohlcv, since, None, key=0)
 
+
 def write_to_csv(filename, data):
-    with open(filename, mode='w') as output_file:
-        csv_writer = csv.writer(output_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-        csv_writer.writerows(data)
+    df = pd.DataFrame(data, columns = ['date', 'open', 'high', 'low', 'close', 'volume'])
+    df.reset_index(drop=True)
+    df.to_csv(filename)
 
 def scrape_candles_to_csv(filename, exchange_id, max_retries, symbol, timeframe, since, limit):
     # instantiate the exchange by id
@@ -60,7 +62,7 @@ def scrape_candles_to_csv(filename, exchange_id, max_retries, symbol, timeframe,
     write_to_csv(filename, ohlcv)
     print('Saved', len(ohlcv), 'candles from', exchange.iso8601(ohlcv[0][0]), 'to', exchange.iso8601(ohlcv[-1][0]), 'to', filename)
 
-def fetchData():
-    # -----------------------------------------------------------------------------
-    # Binance's BTC/USDT candles start on 2017-08-17
-    scrape_candles_to_csv('binance.csv', 'binance', 3, 'BTC/USDT', '1m', '2017-08-17T00:00:00Z', 100)
+
+# -----------------------------------------------------------------------------
+# Binance's BTC/USDT candles start on 2017-08-17
+scrape_candles_to_csv('binance.csv', 'binance', 3, 'BTC/USDT', '1h', '2017-08-17T04:00:00Z', 100)
