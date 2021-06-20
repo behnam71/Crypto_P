@@ -158,6 +158,9 @@ def main_process(args):
 
         #Use GPUs iff "RLLIB_NUM_GPUS" env var set to > 0.
         "num_gpus": int(os.environ.get("RLLIB_NUM_GPUS", "0")),
+        #"num_gpus": 1,
+
+        #"train_batch_size": 1000,
 
         # === Debug Settings ===
         "log_level": "WARN", # "WARN" or "DEBUG" for more info
@@ -295,7 +298,8 @@ def main_process(args):
     )
 
     if not ray.is_initialized():
-        ray.init(local_mode=True)
+        ray.init(num_cpus=args.num_cpus or None, local_mode=True)
+        #ray.init(num_gpus=1) # Skip or set to ignore if already called
 
     ModelCatalog.register_custom_model(
         "rnn", TorchRNNModel if args.framework == "torch" else RNNModel)
@@ -364,8 +368,7 @@ def main_process(args):
 
         render_env(test_env, agent)
 
-    if ray.is_initialized():
-        ray.shutdown()
+    ray.shutdown()
 
 
 def render_env(env, agent):
