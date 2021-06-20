@@ -62,7 +62,8 @@ parser.add_argument(
     choices=["BTC", "ETH", "DOGE"],
     default="BTC"
     )
-parser.add_argument("--num_cpus", 
+parser.add_argument(
+    "--num_cpus", 
     type=int, 
     default=3
     )
@@ -166,7 +167,7 @@ def main_process(args):
         "callbacks": {"on_episode_end": get_net_worth},
 
         # === rnn model parameters ===
-        "num_envs_per_worker": 1,
+        #"num_envs_per_worker": 1,
         "entropy_coeff": 0.001,
         "num_sgd_iter": 5,
         "vf_loss_coeff": 1e-5,
@@ -441,7 +442,7 @@ if __name__ == "__main__":
 
 
     # tensorboard --logdir=C:\Users\Stephan\ray_results\PPO
-    # python core.py --alg PPO --c_Instrument BTC --num_cpus 3 --framework torch --stop_iters 120 --window_size 14
-    # python core.py --alg PPO --c_Instrument BTC --num_cpus 3 --framework torch --stop_iters 120 --as_test --window_size 14
+    # python core.py --alg PPO --c_Instrument BTC --num_cpus 3 --framework torch --stop_iters 120 --window_size 20
+    # python core.py --alg PPO --c_Instrument BTC --num_cpus 3 --framework torch --stop_iters 120 --as_test --window_size 20
 
-    # python core.py --alg PPO --c_Instrument BTC --num_cpus 3 --framework torch --stop_iters 120 --as_test --online True --window_size 14
+    # python core.py --alg PPO --c_Instrument BTC --num_cpus 3 --framework torch --stop_iters 120 --as_test --online True --window_size 20
