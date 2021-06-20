@@ -63,13 +63,13 @@ parser.add_argument(
     default="BTC"
     )
 parser.add_argument("--num_cpus", 
-	type=int, 
-	default=2
-	)
+    type=int, 
+    default=3
+    )
 parser.add_argument(
     "--stop_iters",
     type=int,
-    default=100,
+    default=120,
     help="Number of iterations to train."
     )
 parser.add_argument(
@@ -109,20 +109,20 @@ parser.add_argument(
     )
 
 def data_loading(args):
-    percent = 0.9
+    ttp = 0.9
     if args.online == True:
-        percent = 1
+        ttp = 1
     
     dataset = pd.read_csv('/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/data.csv', low_memory=False, index_col=[0])
     candles = dataset[['date', 'open', 'high', 'low', 'close', 'volume']] # chart data
     # Divide the data in test (last 20%) and training (first 80%)
-    data_End = (int)(len(candles)*p)
+    data_End = (int)(len(candles)*ttp)
     return dataset, candles, data_End
 
 
-def start(args):
+def main_process(args):
     # Declare when training can stop & Never more than 200
-    maxIter = 120
+    maxIter = args.stop_iters
 
     # === TRADING ENVIRONMENT CONFIG === 
     # Lookback window for the TradingEnv
@@ -154,16 +154,22 @@ def start(args):
         # Discount factor of the MDP.
         # Lower gamma values will put more weight on short-term gains, whereas higher gamma values will put more weight towards long-term gains. 
         "gamma": 0.7, # default = 0.99
+
         #Use GPUs iff "RLLIB_NUM_GPUS" env var set to > 0.
         "num_gpus": int(os.environ.get("RLLIB_NUM_GPUS", "0")),
 
         # === Debug Settings ===
-        "log_level" : "WARN", # "WARN" or "DEBUG" for more info
-        "ignore_worker_failures" : True,
+        "log_level": "WARN", # "WARN" or "DEBUG" for more info
+        "ignore_worker_failures": True,
 
         # === Custom Metrics === 
         "callbacks": {"on_episode_end": get_net_worth},
 
+        # === rnn model parameters ===
+        "num_envs_per_worker": 1,
+        "entropy_coeff": 0.001,
+        "num_sgd_iter": 5,
+        "vf_loss_coeff": 1e-5,
         "model": {
             "custom_model": "rnn",
             "max_seq_len": 32,
@@ -299,8 +305,10 @@ def start(args):
             args.alg,
             # https://docs.ray.io/en/master/tune/api_docs/stoppers.html
             #stop=ExperimentPlateauStopper(metric="episode_reward_mean", std=0.1, top=10, mode="max", patience=0),
-            stop={"training_iteration": 20},
-            #stop={"episode_len_mean" : (len(data) - dataEnd) - 1},
+            stop={"training_iteration": maxIter,
+                  #"timesteps_total": args.stop_timesteps, "episode_reward_mean": args.stop_reward,
+            },
+            #stop={"episode_len_mean": (len(data) - dataEnd) - 1},
             config=config,
             checkpoint_at_end=True,
             metric="episode_reward_mean",
@@ -350,7 +358,7 @@ def start(args):
         test_env = create_env({
             "window_size": config["window_size"],
             "max_allowed_loss": config["max_allowed_loss"],
-            "train" : False
+            "train": False
         })
 
         render_env(test_env, agent)
@@ -371,7 +379,6 @@ def render_env(env, agent):
     info = {}
     state = agent.get_policy().get_initial_state()
     total_reward = 0
-    h_counter = 0
     print("Start Interaction ...")
     while not done:
         action, state, fetch = agent.compute_action(
@@ -386,15 +393,13 @@ def render_env(env, agent):
         _prev_reward = reward
         _prev_action = action
         networth.append(info['net_worth'])
-        h_counter += 1
-        if (h_counter % 1) == 0:
-            print("Next Observer:"); print(obs)
-            print("Selected Action: {}".format(str(action)))
-            print("Reward: {}".format(str(reward)))
-            print("Total Reward: {}".format(str(total_reward)))
-            print("NetWorth: {}".format(str(round(info['net_worth'], 2))))
-            print("Counter: {}\n\n".format(str(h_counter)))
-            #sleep(2)
+        print("Next Observer:"); print(obs)
+        print("Selected Action: {}".format(str(action)))
+        print("Reward: {}".format(str(reward)))
+        print("Total Reward: {}".format(str(total_reward)))
+        print("NetWorth: {}".format(str(round(info['net_worth'], 2))))
+        print("Counter: {}\n\n".format(str(h_counter)))
+        sleep(2)
     
     # Render the test environment
     env.render()
@@ -430,19 +435,13 @@ if __name__ == "__main__":
                 temp = modificationTime
                 modTimesinceEpoc = os.path.getmtime("data.csv")
                 modificationTime = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(modTimesinceEpoc))
-            start()
+            main_process(args)
     else:
-        start()
+        main_process(args)
 
 
     # tensorboard --logdir=C:\Users\Stephan\ray_results\PPO
-    # python core.py --alg PPO --c_Instrument BTC --num-cpus 2 --framework torch --stop_iters 100 --stop_timesteps 100000 --stop_reward 9000.0 --window_size 10
-    # python core.py --alg PPO --c_Instrument BTC --num-cpus 2 --framework torch --stop_iters 100 --stop_timesteps 100000 --stop_reward 9000.0 --as_test --window_size 10
+    # python core.py --alg PPO --c_Instrument BTC --num_cpus 3 --framework torch --stop_iters 120 --window_size 14
+    # python core.py --alg PPO --c_Instrument BTC --num_cpus 3 --framework torch --stop_iters 120 --as_test --window_size 14
 
-    # python core.py --alg PPO --c_Instrument BTC --num-cpus 2 --framework torch --stop_iters 100 --stop_timesteps 100000 --stop_reward 9000.0 --as_test --online True --window_size 10
-
-    # tensorboard --logdir=C:\Users\Stephan\ray_results\PPO
-    # python core.py --alg PPO --c_Instrument BTC --num-cpus 2 --framework torch --stop_iters 100 --stop_timesteps 100000 --stop_reward 9000.0 --window_size 10
-    # python core.py --alg PPO --c_Instrument BTC --num-cpus 2 --framework torch --stop_iters 100 --stop_timesteps 100000 --stop_reward 9000.0 --as_test --window_size 10
-
-    # python core.py --alg PPO --c_Instrument BTC --num-cpus 2 --framework torch --stop_iters 100 --stop_timesteps 100000 --stop_reward 9000.0 --as_test --online True --window_size 10
+    # python core.py --alg PPO --c_Instrument BTC --num_cpus 3 --framework torch --stop_iters 120 --as_test --online True --window_size 14
