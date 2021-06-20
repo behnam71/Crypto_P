@@ -8,7 +8,6 @@ import pandas as pd
 from IPython.display import display
 from time import sleep
 from pprint import pprint
-from ta import add_all_ta_features
 
 import tensorflow as tf
 
@@ -45,6 +44,7 @@ from tensortrade.oms.orders import (
 )
 
 import multiprocessing
+from ta import add_all_ta_features
 
 from continuously_Data import fetchData
 
