@@ -7,7 +7,7 @@ import pandas as pd
 root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(root + '/python')
 
-import ccxt  # noqa: E402
+import ccxt
 
 
 # -----------------------------------------------------------------------------
@@ -16,12 +16,11 @@ def retry_fetch_ohlcv(exchange, max_retries, symbol, timeframe, since, limit):
     try:
         num_retries += 1
         ohlcv = exchange.fetch_ohlcv(symbol, timeframe, since, limit)
-        # print('Fetched', len(ohlcv), symbol, 'candles from', exchange.iso8601 (ohlcv[0][0]), 'to', exchange.iso8601 (ohlcv[-1][0]))
+        #print('Fetched', len(ohlcv), symbol, 'candles from', exchange.iso8601 (ohlcv[0][0]), 'to', exchange.iso8601 (ohlcv[-1][0]))
         return ohlcv
     except Exception:
         if num_retries > max_retries:
             raise # Exception('Failed to fetch', timeframe, symbol, 'OHLCV in', max_retries, 'attempts')
-
 
 def scrape_ohlcv(exchange, max_retries, symbol, timeframe, since, limit):
     timeframe_duration_in_seconds = exchange.parse_timeframe(timeframe)
@@ -40,7 +39,6 @@ def scrape_ohlcv(exchange, max_retries, symbol, timeframe, since, limit):
             print(len(all_ohlcv), 'candles in total from', exchange.iso8601(fetch_since))
     return exchange.filter_by_since_limit(all_ohlcv, since, None, key=0)
 
-
 def write_to_csv(filename, data):
     df = pd.DataFrame(data, columns = ['date', 'open', 'high', 'low', 'close', 'volume'])
     df.reset_index(drop=True)
@@ -56,12 +54,9 @@ def scrape_candles_to_csv(filename, exchange_id, max_retries, symbol, timeframe,
         since = exchange.parse8601(since)
     # preload all markets from the exchange
     exchange.load_markets()
-    # fetch all candles
     ohlcv = scrape_ohlcv(exchange, max_retries, symbol, timeframe, since, limit)
-    # save them to csv file
     write_to_csv(filename, ohlcv)
     print('Saved', len(ohlcv), 'candles from', exchange.iso8601(ohlcv[0][0]), 'to', exchange.iso8601(ohlcv[-1][0]), 'to', filename)
-
 
 # -----------------------------------------------------------------------------
 # Binance's BTC/USDT candles start on 2017-08-17
