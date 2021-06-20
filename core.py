@@ -43,7 +43,9 @@ from tensortrade.oms.orders import (
     TradeSide,
     TradeType
 )
+
 import multiprocessing
+
 from continuously_Data import fetchData
 
 
@@ -136,32 +138,24 @@ def start(args):
     # === CONFIG FOR AGENT ===
     config = {
         # === ENV Parameters ===
-        "env" : "TradingEnv",
-        "env_config" : {
-            "window_size" : window_size,
-            "max_allowed_loss" : max_allowed_loss,
-            "train" : args.as_test,
+        "env": "TradingEnv",
+        "env_config": {
+            "window_size": window_size,
+            "max_allowed_loss": max_allowed_loss,
+            "train": args.as_test,
         },
         # === RLLib parameters ===
         # https://docs.ray.io/en/master/rllib-training.html#common-parameters
         # === Settings for Rollout Worker processes ===
         # Number of rollout worker actors to create for parallel sampling.
-        "num_workers" : 2, # Amount of CPU cores - 1
+        "num_workers": 3, # Amount of CPU cores - 1
 
         # === Environment Settings ===
         # Discount factor of the MDP.
         # Lower gamma values will put more weight on short-term gains, whereas higher gamma values will put more weight towards long-term gains. 
-        "gamma" : 0, # default = 0.99 
+        "gamma": 0.7, # default = 0.99
         #Use GPUs iff "RLLIB_NUM_GPUS" env var set to > 0.
         "num_gpus": int(os.environ.get("RLLIB_NUM_GPUS", "0")),
-        "num_sgd_iter": 5,
-        #"lr" : 0.01, # default = 0.00005 && Higher lr fits training model better, but causes overfitting 
-        #"clip_rewards": True, 
-        #"observation_filter": "MeanStdFilter",
-        #"lambda": 0.72,
-        #"vf_loss_coeff": 0.5,
-        #"entropy_coeff": 0.01,
-        #"batch_mode": "complete_episodes",
 
         # === Debug Settings ===
         "log_level" : "WARN", # "WARN" or "DEBUG" for more info
@@ -172,9 +166,9 @@ def start(args):
 
         "model": {
             "custom_model": "rnn",
-            "max_seq_len": 20,
+            "max_seq_len": 32,
             "custom_model_config": {
-                "cell_size": 32,
+                "cell_size": 24,
             },
         },
         "framework": args.framework,
@@ -354,8 +348,8 @@ def start(args):
         # Instantiate the testing environment
         # Must have same settings for window_size and max_allowed_loss as the training env
         test_env = create_env({
-            "window_size": window_size,
-            "max_allowed_loss": max_allowed_loss,
+            "window_size": config["window_size"],
+            "max_allowed_loss": config["max_allowed_loss"],
             "train" : False
         })
 
@@ -410,6 +404,7 @@ def render_env(env, agent):
     #performance = pd.DataFrame.from_dict(env.action_scheme.portfolio.performance, orient='index')
     #performance.plot()
 
+
 # === CALLBACK ===
 def get_net_worth(info):
     # info is a dict containing: env, policy and info["episode"] is an evaluation episode
@@ -423,10 +418,10 @@ if __name__ == "__main__":
     # To prevent CUDNN_STATUS_ALLOC_FAILED error
     #tf.config.experimental.set_memory_growth(tf.config.experimental.list_physical_devices('GPU')[0], True)
     if args.online == True:
-            # creating processes
-            process1 = multiprocessing.Process(target=fetchData, args=('1m', [args.c_Instrument + "/USDT"], args.window_size,))
-            # starting process 1
-            process1.start()
+        # creating processes
+        process1 = multiprocessing.Process(target=fetchData, args=('1m', [args.c_Instrument + "/USDT"], args.window_size,))
+        # starting process 1
+        process1.start()
         while True:
             modTimesinceEpocORG = os.path.getmtime("data.csv")
             modificationTimeORG = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(modTimesinceEpocORG))
@@ -438,6 +433,7 @@ if __name__ == "__main__":
             start()
     else:
         start()
+
 
     # tensorboard --logdir=C:\Users\Stephan\ray_results\PPO
     # python core.py --alg PPO --c_Instrument BTC --num-cpus 2 --framework torch --stop_iters 100 --stop_timesteps 100000 --stop_reward 9000.0 --window_size 10
