@@ -7,7 +7,7 @@ import pandas as pd
 root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(root + '/python')
 
-import ccxt
+import ccxt  # noqa: E402
 
 
 # -----------------------------------------------------------------------------
@@ -16,7 +16,7 @@ def retry_fetch_ohlcv(exchange, max_retries, symbol, timeframe, since, limit):
     try:
         num_retries += 1
         ohlcv = exchange.fetch_ohlcv(symbol, timeframe, since, limit)
-        #print('Fetched', len(ohlcv), symbol, 'candles from', exchange.iso8601 (ohlcv[0][0]), 'to', exchange.iso8601 (ohlcv[-1][0]))
+        # print('Fetched', len(ohlcv), symbol, 'candles from', exchange.iso8601 (ohlcv[0][0]), 'to', exchange.iso8601 (ohlcv[-1][0]))
         return ohlcv
     except Exception:
         if num_retries > max_retries:
@@ -40,9 +40,16 @@ def scrape_ohlcv(exchange, max_retries, symbol, timeframe, since, limit):
     return exchange.filter_by_since_limit(all_ohlcv, since, None, key=0)
 
 def write_to_csv(filename, data):
-    df = pd.DataFrame(data, columns = ['date', 'open', 'high', 'low', 'close', 'volume'])
-    df.reset_index(drop=True)
-    df.to_csv(filename)
+    dataset = pd.DataFrame(data, columns = ['date', 'open', 'high', 'low', 'close', 'volume'])
+    dataset['date'] = pd.to_datetime(dataset['date'], unit='ms')
+    dataset.reset_index(drop=True)
+    dataset = add_all_ta_features(dataset, open="open", high="high", low="low", close="close", volume="volume", fillna=True)
+    dataset = dataset[['date', 'open', 'high', 'low', 'close', 'volume', 'volume_adi', 'volume_obv', 'volume_mfi', 'volatility_atr',
+                       'volatility_bbm', 'volatility_bbh','volatility_bbl', 'trend_macd', 'trend_macd_signal', 'trend_macd_diff','trend_ema_fast',
+                       'trend_ema_slow', 'trend_adx', 'trend_adx_pos', 'trend_adx_neg', 'trend_cci', 'trend_ichimoku_conv', 'trend_ichimoku_base', 
+                       'trend_ichimoku_a', 'trend_ichimoku_b', 'trend_psar_up', 'trend_psar_down', 'momentum_rsi', 'momentum_stoch', 
+                       'momentum_stoch_signal', 'momentum_wr']]
+    dataset.to_csv(filename)
 
 def scrape_candles_to_csv(filename, exchange_id, max_retries, symbol, timeframe, since, limit):
     # instantiate the exchange by id
@@ -54,7 +61,9 @@ def scrape_candles_to_csv(filename, exchange_id, max_retries, symbol, timeframe,
         since = exchange.parse8601(since)
     # preload all markets from the exchange
     exchange.load_markets()
+    # fetch all candles
     ohlcv = scrape_ohlcv(exchange, max_retries, symbol, timeframe, since, limit)
+    # save them to csv file
     write_to_csv(filename, ohlcv)
     print('Saved', len(ohlcv), 'candles from', exchange.iso8601(ohlcv[0][0]), 'to', exchange.iso8601(ohlcv[-1][0]), 'to', filename)
 
