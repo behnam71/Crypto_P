@@ -43,10 +43,7 @@ from tensortrade.oms.orders import (
     TradeSide,
     TradeType
 )
-
 import multiprocessing
-
-from preprocessing import load_dataset
 from continuously_Data import fetchData
 
 
@@ -114,7 +111,7 @@ def data_loading(args):
     if args.online == True:
         percent = 1
     
-    dataset = load_dataset(file_name='/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/data.csv')
+    dataset = pd.read_csv('/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/data.csv', low_memory=False, index_col=[0])
     candles = dataset[['date', 'open', 'high', 'low', 'close', 'volume']] # chart data
     # Divide the data in test (last 20%) and training (first 80%)
     data_End = (int)(len(candles)*p)
