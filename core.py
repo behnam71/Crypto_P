@@ -114,7 +114,7 @@ def data_loading(args):
     if args.online == True:
         ttp = 1
     
-    dataset = pd.read_csv('/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/data.csv', low_memory=False, index_col=[0])
+    dataset = pd.read_csv('./crypto/data.csv', low_memory=False, index_col=[0])
     candles = dataset[['date', 'open', 'high', 'low', 'close', 'volume']] # chart data
     # Divide the data in test (last 20%) and training (first 80%)
     data_End = (int)(len(candles)*ttp)
@@ -157,8 +157,8 @@ def main_process(args):
         "gamma": 0.7, # default = 0.99
 
         # Use GPUs iff "RLLIB_NUM_GPUS" env var set to > 0.
-        "num_gpus": int(os.environ.get("RLLIB_NUM_GPUS", "0")),
-        #"num_gpus": 1,
+        #"num_gpus": int(os.environ.get("RLLIB_NUM_GPUS", "0")),
+        "num_gpus": 1,
 
         #"train_batch_size": 1000,
 
@@ -298,8 +298,8 @@ def main_process(args):
     )
 
     if not ray.is_initialized():
-        ray.init(num_cpus=args.num_cpus or None, local_mode=True)
-        #ray.init(num_gpus=1) # Skip or set to ignore if already called
+        #ray.init(num_cpus=args.num_cpus or None, local_mode=True)
+        ray.init(num_gpus=1) # Skip or set to ignore if already called
 
     ModelCatalog.register_custom_model(
         "rnn", TorchRNNModel if args.framework == "torch" else RNNModel)
@@ -425,7 +425,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # To prevent CUDNN_STATUS_ALLOC_FAILED error
-    #tf.config.experimental.set_memory_growth(tf.config.experimental.list_physical_devices('GPU')[0], True)
+    tf.config.experimental.set_memory_growth(tf.config.experimental.list_physical_devices('GPU')[0], True)
     if args.online == True:
         # creating processes
         process1 = multiprocessing.Process(target=fetchData, args=('1m', [args.c_Instrument + "/USDT"], args.window_size,))
