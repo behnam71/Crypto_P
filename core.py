@@ -149,14 +149,14 @@ def main_process(args):
         # https://docs.ray.io/en/master/rllib-training.html#common-parameters
         # === Settings for Rollout Worker processes ===
         # Number of rollout worker actors to create for parallel sampling.
-        "num_workers": 3, # Amount of CPU cores - 1
+        "num_workers": 1, # Amount of CPU cores - 1
 
         # === Environment Settings ===
         # Discount factor of the MDP.
         # Lower gamma values will put more weight on short-term gains, whereas higher gamma values will put more weight towards long-term gains. 
         "gamma": 0.7, # default = 0.99
 
-        #Use GPUs iff "RLLIB_NUM_GPUS" env var set to > 0.
+        # Use GPUs iff "RLLIB_NUM_GPUS" env var set to > 0.
         "num_gpus": int(os.environ.get("RLLIB_NUM_GPUS", "0")),
         #"num_gpus": 1,
 
