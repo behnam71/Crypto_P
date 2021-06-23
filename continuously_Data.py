@@ -78,4 +78,3 @@ def fetchData(timeframe, symbols, windows_s):
     loop = asyncio.get_event_loop()
     coroutine = fetch_all_ohlcvs_continuously(loop, exchange_id, timeframe, symbols, windows_s, fetching_time)
     results = loop.run_until_complete(coroutine)
-    pprint(results)
