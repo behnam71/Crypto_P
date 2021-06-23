@@ -52,12 +52,12 @@ async def fetch_ohlcvs_continuously(exchange,
             df = pd.DataFrame(all_ohlcvs, columns =["date", "open", "high", "low", "close", "volume"])
             df.reset_index(drop=True)
             dataset = add_all_ta_features(df, open="open", high="high", low="low", close="close", volume="volume", fillna=False)
-            dataset = dataset[["date", "open", "high", "low", "close", "volume", "volume_adi", "volume_obv", "volume_mfi", 
-                               "trend_macd", "trend_macd_diff", "trend_ema_fast", "trend_ema_slow", "trend_ichimoku_base",
-                               "trend_ichimoku_a", "trend_ichimoku_b", "trend_psar_up", "trend_psar_down", "momentum_rsi",
-                               "momentum_stoch", "momentum_wr", "trend_adx_pos", "trend_adx_neg", "momentum_stoch_signal",
-                               "volatility_atr", "volatility_bbh", "volatility_bbl", "trend_cci",
-                               "trend_macd_signal", "trend_adx", "trend_ichimoku_conv",
+            dataset = dataset[["date","open","high","low","close","volume","volume_adi","volume_obv","volume_mfi",
+                               "volatility_atr","volatility_bbh","volatility_bbl","trend_cci","trend_macd_signal",
+                               "trend_macd","trend_macd_diff","trend_ema_fast","trend_ema_slow","trend_ichimoku_base",
+                               "trend_ichimoku_a","trend_ichimoku_b","trend_psar_up","trend_psar_down","momentum_rsi",
+                               "momentum_stoch","momentum_wr","trend_adx_pos","trend_adx_neg","momentum_stoch_signal",
+                               "trend_adx","trend_ichimoku_conv",
                               ]]
             dataset.to_csv("data1.csv")
 
