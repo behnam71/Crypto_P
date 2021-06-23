@@ -48,11 +48,11 @@ async def fetch_ohlcvs_continuously(exchange, timeframe, symbol, windows_s, fetc
             df.reset_index(drop=True)
             dataset = add_all_ta_features(df, open="open", high="high", low="low", close="close", volume="volume", fillna=False)
             dataset = dataset[['date', 'open', 'high', 'low', 'close', 'volume', 'volume_adi', 'volume_obv', 'volume_mfi', 
-                               'volatility_atr', 'volatility_bbm', 'volatility_bbh','volatility_bbl', 'trend_macd', 
-                               'trend_macd_signal', 'trend_macd_diff', 'trend_ema_fast', 'trend_ema_slow', 'trend_adx', 
-                               'trend_adx_pos', 'trend_adx_neg', 'trend_cci', 'trend_ichimoku_conv', 'trend_ichimoku_base', 
-                               'trend_ichimoku_a', 'trend_ichimoku_b', 'trend_psar_up', 'trend_psar_down', 'momentum_rsi', 
-                               'momentum_stoch', 'momentum_stoch_signal', 'momentum_wr']] # chart data
+                               'volatility_atr', 'volatility_bbm', 'volatility_bbh','volatility_bbl', 'trend_macd_signal',
+                               'trend_macd', 'trend_macd_diff', 'trend_ema_fast', 'trend_ema_slow', 'trend_ichimoku_base',
+                               'trend_ichimoku_a', 'trend_ichimoku_b', 'trend_psar_up', 'trend_psar_down', 'momentum_rsi',
+                               'momentum_stoch', 'momentum_wr', 'trend_adx_pos', 'trend_adx_neg', 'momentum_stoch_signal',
+                               'trend_cci', "trend_adx", 'trend_ichimoku_conv']]
             dataset.to_csv("data1.csv")
 
         for ohlcv in all_ohlcvs:
@@ -73,8 +73,8 @@ async def fetch_all_ohlcvs_continuously(loop, exchange_id, timeframe, symbols, w
 def fetchData(timeframe, symbols, windows_s):
     print('CCXT version:', ccxt.__version__)
 
-    exchange_id = 'binance'
-    fetching_time = 15 * 60 * 1000 # stop after 15 minutes (approximately 4 iterations)
+    exchange_id = 'phemex'
+    fetching_time = 60 * 60 * 1000 # stop after 60 minutes
     loop = asyncio.get_event_loop()
     coroutine = fetch_all_ohlcvs_continuously(loop, exchange_id, timeframe, symbols, windows_s, fetching_time)
     results = loop.run_until_complete(coroutine)
