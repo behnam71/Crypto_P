@@ -58,7 +58,7 @@ async def fetch_ohlcvs_continuously(exchange,
                                "trend_macd","trend_macd_diff","trend_ema_fast","trend_ema_slow","trend_ichimoku_base",
                                "trend_ichimoku_a","trend_ichimoku_b","trend_psar_up","trend_psar_down","momentum_rsi",
                                "momentum_stoch","momentum_wr","trend_adx_pos","trend_adx_neg","momentum_stoch_signal",
-                               "trend_adx","trend_ichimoku_conv",
+                               "trend_adx","trend_ichimoku_conv","volatility_bbm",
                               ]]
             dataset.to_csv("data1.csv")
 
