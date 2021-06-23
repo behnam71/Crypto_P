@@ -15,8 +15,13 @@ import ccxt.async_support as ccxt  # noqa: E402
 
 # this example shows how to fetch OHLCVs continuously, see issue #7498
 # https://github.com/ccxt/ccxt/issues/7498
-async def fetch_ohlcvs_continuously(exchange, timeframe, symbol, windows_s, fetching_time):
-    print(exchange.id, timeframe, symbol, 'starting')
+async def fetch_ohlcvs_continuously(exchange, 
+                                    timeframe, 
+                                    symbol, 
+                                    windows_s, 
+                                    fetching_time
+                                   ):
+    print(exchange.id, timeframe, symbol, "starting")
     all_ohlcvs = []
     limit = 1
     duration_in_seconds = exchange.parse_timeframe(timeframe)
@@ -26,33 +31,34 @@ async def fetch_ohlcvs_continuously(exchange, timeframe, symbol, windows_s, fetc
     while now < end_time:
         since = int(now / duration_in_milliseconds) * duration_in_milliseconds
         time_to_wait = duration_in_milliseconds - now % duration_in_milliseconds + 10000  # +10 seconds buffer
-        print(exchange.id, timeframe, symbol, 'time now is', exchange.iso8601(now))
-        print(exchange.id, timeframe, symbol, 'time to wait is', time_to_wait / 1000, 'seconds')
-        print(exchange.id, timeframe, symbol, 'sleeping till', exchange.iso8601(now + time_to_wait))
+        print(exchange.id, timeframe, symbol, "time now is", exchange.iso8601(now))
+        print(exchange.id, timeframe, symbol, "time to wait is", time_to_wait / 1000, "seconds")
+        print(exchange.id, timeframe, symbol, "sleeping till", exchange.iso8601(now + time_to_wait))
         await exchange.sleep(time_to_wait)
-        print(exchange.id, timeframe, symbol, 'done sleeping at', exchange.iso8601(exchange.milliseconds()))
+        print(exchange.id, timeframe, symbol, "done sleeping at", exchange.iso8601(exchange.milliseconds()))
         while True:
             try:
                 ohlcvs = await exchange.fetch_ohlcv(symbol, timeframe, since, limit)
                 break
             except Exception as e:
                 print(type(e).__name__, e.args, str(e))  # comment if not needed
-                #break | pass - to break it | to do nothing and just retry again on next iteration
+                # break | pass - to break it | to do nothing and just retry again on next iteration
                 # or add your own reaction according to the purpose of your app
-        print(exchange.id, timeframe, symbol, 'fetched', len(ohlcvs), 'candle(s), time now is', exchange.iso8601(exchange.milliseconds()))
-        print(exchange.id, timeframe, symbol, 'all candles:')
+        print(exchange.id, timeframe, symbol, "fetched", len(ohlcvs), "candle(s), time now is", exchange.iso8601(exchange.milliseconds()))
+        print(exchange.id, timeframe, symbol, "all candles:")
         all_ohlcvs += ohlcvs
         dataset = pd.DataFrame()
         if len(all_ohlcvs) == windows_s:
-            df = pd.DataFrame(all_ohlcvs, columns =['date', 'open', 'high', 'low', 'close', 'volume'])
+            df = pd.DataFrame(all_ohlcvs, columns =["date", "open", "high", "low", "close", "volume"])
             df.reset_index(drop=True)
             dataset = add_all_ta_features(df, open="open", high="high", low="low", close="close", volume="volume", fillna=False)
-            dataset = dataset[['date', 'open', 'high', 'low', 'close', 'volume', 'volume_adi', 'volume_obv', 'volume_mfi', 
-                               'volatility_atr', 'volatility_bbm', 'volatility_bbh','volatility_bbl', 'trend_macd_signal',
-                               'trend_macd', 'trend_macd_diff', 'trend_ema_fast', 'trend_ema_slow', 'trend_ichimoku_base',
-                               'trend_ichimoku_a', 'trend_ichimoku_b', 'trend_psar_up', 'trend_psar_down', 'momentum_rsi',
-                               'momentum_stoch', 'momentum_wr', 'trend_adx_pos', 'trend_adx_neg', 'momentum_stoch_signal',
-                               'trend_cci', "trend_adx", 'trend_ichimoku_conv']]
+            dataset = dataset[["date", "open", "high", "low", "close", "volume", "volume_adi", "volume_obv", "volume_mfi", 
+                               "trend_macd", "trend_macd_diff", "trend_ema_fast", "trend_ema_slow", "trend_ichimoku_base",
+                               "trend_ichimoku_a", "trend_ichimoku_b", "trend_psar_up", "trend_psar_down", "momentum_rsi",
+                               "momentum_stoch", "momentum_wr", "trend_adx_pos", "trend_adx_neg", "momentum_stoch_signal",
+                               "volatility_atr", "volatility_bbh", "volatility_bbl", "trend_cci",
+                               "trend_macd_signal", "trend_adx", "trend_ichimoku_conv",
+                              ]]
             dataset.to_csv("data1.csv")
 
         for ohlcv in all_ohlcvs:
@@ -61,7 +67,13 @@ async def fetch_ohlcvs_continuously(exchange, timeframe, symbol, windows_s, fetc
     return {symbol: all_ohlcvs}
 
 
-async def fetch_all_ohlcvs_continuously(loop, exchange_id, timeframe, symbols, windows_s, fetching_time):
+async def fetch_all_ohlcvs_continuously(loop, 
+                                        exchange_id, 
+                                        timeframe, 
+                                        symbols, 
+                                        windows_s, 
+                                        fetching_time
+                                       ):
     exchange_class = getattr(ccxt, exchange_id)
     exchange = exchange_class({'enableRateLimit': True, 'asyncio_loop': loop})
     input_coroutines = [fetch_ohlcvs_continuously(exchange, timeframe, symbol, windows_s, fetching_time) for symbol in symbols]
@@ -70,7 +82,10 @@ async def fetch_all_ohlcvs_continuously(loop, exchange_id, timeframe, symbols, w
     return exchange.extend(*results)
 
 
-def fetchData(timeframe, symbols, windows_s):
+def fetchData(timeframe, 
+              symbols, 
+              windows_s
+             ):
     print('CCXT version:', ccxt.__version__)
 
     exchange_id = 'phemex'
