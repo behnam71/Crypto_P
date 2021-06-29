@@ -7,7 +7,7 @@ import pandas as pd
 root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(root + '/python')
 
-import ccxt  # noqa: E402
+import ccxt
 
 
 # -----------------------------------------------------------------------------
@@ -43,12 +43,6 @@ def write_to_csv(filename, data):
     dataset = pd.DataFrame(data, columns = ['date', 'open', 'high', 'low', 'close', 'volume'])
     dataset['date'] = pd.to_datetime(dataset['date'], unit='ms')
     dataset.reset_index(drop=True)
-    dataset = add_all_ta_features(dataset, open="open", high="high", low="low", close="close", volume="volume", fillna=True)
-    dataset = dataset[['date', 'open', 'high', 'low', 'close', 'volume', 'volume_adi', 'volume_obv', 'volume_mfi', 'volatility_atr',
-                       'volatility_bbm', 'volatility_bbh','volatility_bbl', 'trend_macd', 'trend_macd_signal', 'trend_macd_diff','trend_ema_fast',
-                       'trend_ema_slow', 'trend_adx', 'trend_adx_pos', 'trend_adx_neg', 'trend_cci', 'trend_ichimoku_conv', 'trend_ichimoku_base', 
-                       'trend_ichimoku_a', 'trend_ichimoku_b', 'trend_psar_up', 'trend_psar_down', 'momentum_rsi', 'momentum_stoch', 
-                       'momentum_stoch_signal', 'momentum_wr']]
     dataset.to_csv(filename)
 
 def scrape_candles_to_csv(filename, exchange_id, max_retries, symbol, timeframe, since, limit):
