@@ -15,7 +15,9 @@ def retry_fetch_ohlcv(exchange, max_retries, symbol, timeframe, since, limit):
     num_retries = 0
     try:
         num_retries += 1
-        ohlcv = exchange.fetch_ohlcv(symbol, timeframe, since, limit)
+        ohlcv = exchange.fetch_ohlcv(
+            symbol, timeframe, since, limit
+        )
         # print('Fetched', len(ohlcv), symbol, 'candles from', exchange.iso8601 (ohlcv[0][0]), 'to', exchange.iso8601 (ohlcv[-1][0]))
         return ohlcv
     except Exception:
@@ -30,7 +32,9 @@ def scrape_ohlcv(exchange, max_retries, symbol, timeframe, since, limit):
     all_ohlcv = []
     fetch_since = since
     while fetch_since < now:
-        ohlcv = retry_fetch_ohlcv(exchange, max_retries, symbol, timeframe, fetch_since, limit)
+        ohlcv = retry_fetch_ohlcv(
+            exchange, max_retries, symbol, timeframe, fetch_since, limit
+        )
         fetch_since = (ohlcv[-1][0] + 1) if len(ohlcv) else (fetch_since + timedelta)
         all_ohlcv = all_ohlcv + ohlcv
         if len(all_ohlcv):
@@ -56,7 +60,9 @@ def scrape_candles_to_csv(filename, exchange_id, max_retries, symbol, timeframe,
     # preload all markets from the exchange
     exchange.load_markets()
     # fetch all candles
-    ohlcv = scrape_ohlcv(exchange, max_retries, symbol, timeframe, since, limit)
+    ohlcv = scrape_ohlcv(
+        exchange, max_retries, symbol, timeframe, since, limit
+    )
     # save them to csv file
     write_to_csv(filename, ohlcv)
     print('Saved', len(ohlcv), 'candles from', exchange.iso8601(ohlcv[0][0]), 'to', exchange.iso8601(ohlcv[-1][0]), 'to', filename)
