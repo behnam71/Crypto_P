@@ -29,7 +29,10 @@ from tensortrade.rewards import RiskAdjustedReturns
 from tensortrade.actions import ManagedRiskOrders
 from tensortrade.instruments import BTC, USD, Quantity
 from tensortrade.wallets import Wallet, Portfolio
-from tensortrade.exchanges.simulated import SimulatedExchange
+from tensortrade.features import FeaturePipeline
+from tensortrade.features.scalers import MinMaxNormalizer
+from tensortrade.features.stationarity import FractionalDifference
+from tensortrade.features.indicators.talib_indicator import TAlibIndicator
 
 from continuously_Data import fetchData
 
@@ -152,7 +155,7 @@ def main_process(args):
     ## Create Data Feeds
     def create_env(config):
         coin = "BTC"
-        candles = pd.read_csv('/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/binance.csv', 
+        dataset = pd.read_csv('/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/binance.csv', 
                               low_memory=False, 
                               index_col=[0])
 
@@ -160,15 +163,20 @@ def main_process(args):
         # Commission on Binance is 0.075% on the lowest level, using BNB (https://www.binance.com/en/fee/schedule)
         binance = SimulatedExchange(data_frame=candles, 
                                     price_column="close",
-                                    randomize_time_slices=True, 
                                     commission=0.0075,
                                     min_trade_price=10.0)
+
+        with open("/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/indicators.txt", "r") as file:
+            indicators_list = eval(file.readline())
+        TAlib_Indicator = TAlibIndicator(indicators_list)
+        feature_pipeline = FeaturePipeline(
+            steps=[TAlib_Indicator]
+        )
 
         # === ORDER MANAGEMENT SYSTEM === 
         # Start with 100.000 usd and 0 assets
         cash = Wallet(binance, Quantity(USD, 10000))
         asset = Wallet(binance, Quantity(BTC, 0))
-
         portfolio = Portfolio(USD, [
             cash,
             asset
@@ -193,16 +201,19 @@ def main_process(args):
         environment = TradingEnvironment(
             exchange=binance,
             portfolio=portfolio,
+            observation_lows=-1.0e+10,
             observation_highs=1.0e+10,
+            TA_features=16,
             action_scheme=action_scheme,
             reward_scheme=reward_scheme,
+            feature_pipeline=feature_pipeline,
             window_size=config["window_size"], # part of OBSERVER
             observe_wallets=[USD, BTC]
         )
         return environment
 
     register_env("TradingEnv", create_env)
-
+    
     if not ray.is_initialized():
         ray.init(num_cpus=args.num_cpus or None)
         #ray.init(num_gpus=1) # Skip or set to ignore if already called
@@ -224,11 +235,10 @@ def main_process(args):
             mode="max", 
             checkpoint_freq=1, # Necesasry to declare, in combination with Stopper
             checkpoint_score_attr="episode_reward_mean",
-            local_dir= "~/ray_results"
+            local_dir="./crypto-v0/ray_results",
             #restore="~/ray_results/PPO",
             #resume=True,
             #max_failures=100,
-
         )
 
     else:
@@ -269,9 +279,7 @@ def main_process(args):
             "window_size": config["window_size"],
             "max_allowed_loss": config["max_allowed_loss"],
         })
-
         render_env(test_env, agent)
-
     ray.shutdown()
 
 
@@ -314,24 +322,13 @@ if __name__ == "__main__":
     # To prevent CUDNN_STATUS_ALLOC_FAILED error
     #tf.config.experimental.set_memory_growth(tf.config.experimental.list_physical_devices('GPU')[0], True)
     if args.online:
-        # creating processes
-        process = multiprocessing.Process(target=fetchData, args=('1m', [args.c_Instrument + "/USDT"], args.window_size,))
-        process.start()
-        while True:
-            modTimesinceEpocORG = os.path.getmtime("data.csv")
-            modificationTimeORG = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(modTimesinceEpocORG))
-            temp = modificationTimeORG
-            modificationTime = temp
-            while modificationTime == temp:
-                temp = modificationTime
-                modTimesinceEpoc = os.path.getmtime("data.csv")
-                modificationTime = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(modTimesinceEpoc))
-            main_process(args)
+        from tensortrade.exchanges.simulated import SimulatedExchange
+        main_process(args)
     else:
         main_process(args)
 
 
     # tensorboard --logdir=C:\Users\Stephan\ray_results\PPO
 
-    # python core.py --alg PPO --c_Instrument BTC --num_cpus 3 --framework torch --stop_iters 120 --window_size 20
-    # python core.py --alg PPO --c_Instrument BTC --num_cpus 3 --framework torch --stop_iters 120 --online --window_size 20
+    # python core.py --alg PPO --c_Instrument BTC --num_cpus 3 --framework torch --stop_iters 120 --window_size 1
+    # python core.py --alg PPO --c_Instrument BTC --num_cpus 3 --framework torch --stop_iters 120 --online --window_size 1
