@@ -61,8 +61,7 @@ async def fetch_all_ohlcvs_continuously(loop, exchange_id, timeframe, symbols, w
 
 def fetchData(timeframe, symbols, windows_s):
     print('CCXT version:', ccxt.__version__)
-
-    exchange_id = 'phemex'
+    exchange_id = 'binance'
     fetching_time = 60 * 60 * 1000 # stop after 60 minutes
     loop = asyncio.get_event_loop()
     coroutine = fetch_all_ohlcvs_continuously(
