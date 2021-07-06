@@ -92,7 +92,7 @@ parser.add_argument(
     help="Testing online or offline."
     )
 
-def main_process(args):
+def main_process(args, binance):
     # Declare when training can stop & Never more than 200
     maxIter = args.stop_iters
 
@@ -158,13 +158,6 @@ def main_process(args):
         dataset = pd.read_csv('/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/binance.csv', 
                               low_memory=False, 
                               index_col=[0])
-
-        # === EXCHANGE ===
-        # Commission on Binance is 0.075% on the lowest level, using BNB (https://www.binance.com/en/fee/schedule)
-        binance = SimulatedExchange(data_frame=candles, 
-                                    price_column="close",
-                                    commission=0.0075,
-                                    min_trade_price=10.0)
 
         with open("/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/indicators.txt", "r") as file:
             indicators_list = eval(file.readline())
@@ -318,14 +311,28 @@ def render_env(env, agent):
 
 if __name__ == "__main__":
     args = parser.parse_args()
-
     # To prevent CUDNN_STATUS_ALLOC_FAILED error
     #tf.config.experimental.set_memory_growth(tf.config.experimental.list_physical_devices('GPU')[0], True)
     if args.online:
-        from tensortrade.exchanges.simulated import SimulatedExchange
-        main_process(args)
+        import ccxt
+        from tensortrade.exchanges.live import CCXTExchange
+        
+        coinbase = ccxt.coinbasepro()
+        binance = CCXTExchange(exchange=coinbase, 
+                               base_instrument='USD')
+        main_process(args, binance)
+        
     else:
-        main_process(args)
+        from tensortrade.exchanges.simulated import SimulatedExchange
+        
+        # === EXCHANGE ===
+        # Commission on Binance is 0.075% on the lowest level, using BNB (https://www.binance.com/en/fee/schedule)
+        binance = SimulatedExchange(data_frame=candles, 
+                                    price_column="close",
+                                    commission=0.0075,
+                                    min_trade_price=10.0)
+        
+        main_process(args, binance)
 
 
     # tensorboard --logdir=C:\Users\Stephan\ray_results\PPO
