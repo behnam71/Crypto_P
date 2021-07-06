@@ -198,8 +198,8 @@ def main_process(args):
             df = data[:-data_End]; env_Data = candles[:-data_End]
             ta_Data = data[:-data_End]
         else:
-        	df = data[-data_End:]; env_Data = candles[-data_End:]
-        	ta_Data = data[-data_End:]
+            df = data[-data_End:]; env_Data = candles[-data_End:]
+            ta_Data = data[-data_End:]
 
         # === OBSERVER ===
         p = Stream.source(df[(coin + ':close')].tolist(), dtype="float").rename(("USD-" + coin))
