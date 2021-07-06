@@ -152,7 +152,7 @@ def main_process(args):
     ## Create Data Feeds
     def create_env(config):
         coin = "BTC"
-        candles = pd.read_csv('/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/data.csv', 
+        candles = pd.read_csv('/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/binance.csv', 
                               low_memory=False, 
                               index_col=[0])
 
