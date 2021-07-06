@@ -1,30 +1,44 @@
 # -*- coding: utf-8 -*-
-import asyncio
+
 import os
 import sys
 
 root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(root + '/python')
 
-import ccxt.async_support as ccxt  # noqa: E402
+import ccxt  # noqa: E402
 
 
-async def test():
-    # instantiate exchanges
-    exchange = ccxt.binance({
-        'enableRateLimit': True,
-        'apiKey': '1f5e94b8-fc56-4e7b-aeeb-b66a46c0bd18',  
-        'secret': 'dMtx9ZDyGXqXRhUwsz1INL8tVU8UZ5Xk9ZkZZ4QchfgyZThkNDhhOC1hNjE1LTQzOWMtYTE4MC1jYjVmMGMxZjQ2ZTA',
-        'options': {
-            'defaultType': 'swap',
-        },
 
-    })
-    print(await exchange.fetch_balance({'currency':'BTC'}))
-    await exchange.close()  # don't forget to close it when you're done
-    return True
+def style(s, style):
+    return style + s + '\033[0m'
 
-if __name__ == '__main__':
-    print('CCXT version:', ccxt.__version__)
-    print(asyncio.get_event_loop().run_until_complete(test()))
-    
+def green(s):
+    return style(s, '\033[92m')
+
+def dump(*args):
+    print(' '.join([str(arg) for arg in args]))
+
+# instantiate exchanges
+binance = ccxt.binance({
+    'apiKey': 'SmweB9bNM2qpYkgl4zaQSFPpSzYpyoJ6B3BE9rCm0XYcAdIE0b7n6bm11e8jMwnI',  
+    'secret': '8x6LtJztmIeGPZyiJOC7lVfg2ixCUYkhVV7CKVWq2LVlPh8mo3Ab7SMkaC8qTZLt',
+    'password': '6kszf4aci8r',  # requires a password!
+})
+
+binance.urls['api'] = binance.urls['test']  # use the testnet
+
+try:
+    # fetch account balance from the exchange
+    binanceBalance = binance.fetch_balance()
+    # output the result
+    dump(green(binance.name), 'balance', binanceBalance)
+
+except ccxt.DDoSProtection as e:
+    print(type(e).__name__, e.args, 'DDoS Protection (ignoring)')
+except ccxt.RequestTimeout as e:
+    print(type(e).__name__, e.args, 'Request Timeout (ignoring)')
+except ccxt.ExchangeNotAvailable as e:
+    print(type(e).__name__, e.args, 'Exchange Not Available due to downtime or maintenance (ignoring)')
+except ccxt.AuthenticationError as e:
+    print(type(e).__name__, e.args, 'Authentication Error (missing API keys, ignoring)')
