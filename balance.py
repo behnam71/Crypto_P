@@ -21,7 +21,6 @@ def dump(*args):
 binance = ccxt.binance({
     'apiKey': 'SmweB9bNM2qpYkgl4zaQSFPpSzYpyoJ6B3BE9rCm0XYcAdIE0b7n6bm11e8jMwnI',  
     'secret': '8x6LtJztmIeGPZyiJOC7lVfg2ixCUYkhVV7CKVWq2LVlPh8mo3Ab7SMkaC8qTZLt',
-    'password': '6kszf4aci8r',  # requires a password!
 })
 
 binance.urls['api'] = binance.urls['test']  # use the testnet
