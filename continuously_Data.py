@@ -5,8 +5,6 @@ import sys
 import pandas as pd
 from pprint import pprint
 
-from ta import add_all_ta_features
-
 root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(root + '/python')
 
@@ -15,12 +13,7 @@ import ccxt.async_support as ccxt  # noqa: E402
 
 # this example shows how to fetch OHLCVs continuously, see issue #7498
 # https://github.com/ccxt/ccxt/issues/7498
-async def fetch_ohlcvs_continuously(exchange, 
-                                    timeframe, 
-                                    symbol, 
-                                    windows_s, 
-                                    fetching_time
-                                   ):
+async def fetch_ohlcvs_continuously(exchange, timeframe, symbol, windows_s, fetching_time):
     print(exchange.id, timeframe, symbol, "starting")
     all_ohlcvs = []
     limit = 1
@@ -38,7 +31,9 @@ async def fetch_ohlcvs_continuously(exchange,
         print(exchange.id, timeframe, symbol, "done sleeping at", exchange.iso8601(exchange.milliseconds()))
         while True:
             try:
-                ohlcvs = await exchange.fetch_ohlcv(symbol, timeframe, since, limit)
+                ohlcvs = await exchange.fetch_ohlcv(
+                  symbol, timeframe, since, limit
+                )
                 break
             except Exception as e:
                 print(type(e).__name__, e.args, str(e))  # comment if not needed
@@ -47,45 +42,30 @@ async def fetch_ohlcvs_continuously(exchange,
         print(exchange.id, timeframe, symbol, "fetched", len(ohlcvs), "candle(s), time now is", exchange.iso8601(exchange.milliseconds()))
         print(exchange.id, timeframe, symbol, "all candles:")
         all_ohlcvs += ohlcvs
-        dataset = pd.DataFrame()
-        if len(all_ohlcvs) == windows_s:
-            df = pd.DataFrame(all_ohlcvs, columns =["date", "open", "high", "low", "close", "volume"])
-            df.reset_index(drop=True)
-            dataset = add_all_ta_features(df, open="open", high="high", low="low", close="close", volume="volume", fillna=False)
-            with open("/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/indicators.txt", "r") as file:
-                indicators_list = eval(file.readline())
-            dataset = dataset[indicators_list]
-            dataset.to_csv("data.csv")
-
         for ohlcv in all_ohlcvs:
-            print(" ", exchange.iso8601(ohlcv[0]), ohlcv[1:])
+            print(' ', exchange.iso8601(ohlcv[0]), ohlcv[1:])
         now = exchange.milliseconds()
     return {symbol: all_ohlcvs}
 
 
-async def fetch_all_ohlcvs_continuously(loop, 
-                                        exchange_id, 
-                                        timeframe, 
-                                        symbols, 
-                                        windows_s, 
-                                        fetching_time
-                                       ):
+async def fetch_all_ohlcvs_continuously(loop, exchange_id, timeframe, symbols, windows_s, fetching_time):
     exchange_class = getattr(ccxt, exchange_id)
     exchange = exchange_class({'enableRateLimit': True, 'asyncio_loop': loop})
-    input_coroutines = [fetch_ohlcvs_continuously(exchange, timeframe, symbol, windows_s, fetching_time) for symbol in symbols]
+    input_coroutines = [fetch_ohlcvs_continuously(
+      exchange, timeframe, symbol, windows_s, fetching_time
+    ) for symbol in symbols]
     results = await asyncio.gather(*input_coroutines, return_exceptions=True)
     await exchange.close()
     return exchange.extend(*results)
 
 
-def fetchData(timeframe, 
-              symbols, 
-              windows_s
-             ):
+def fetchData(timeframe, symbols, windows_s):
     print('CCXT version:', ccxt.__version__)
 
     exchange_id = 'phemex'
     fetching_time = 60 * 60 * 1000 # stop after 60 minutes
     loop = asyncio.get_event_loop()
-    coroutine = fetch_all_ohlcvs_continuously(loop, exchange_id, timeframe, symbols, windows_s, fetching_time)
+    coroutine = fetch_all_ohlcvs_continuously(
+      loop, exchange_id, timeframe, symbols, windows_s, fetching_time
+    )
     results = loop.run_until_complete(coroutine)
