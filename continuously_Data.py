@@ -51,9 +51,11 @@ async def fetch_ohlcvs_continuously(exchange, timeframe, symbol, windows_s, fetc
 async def fetch_all_ohlcvs_continuously(loop, exchange_id, timeframe, symbols, windows_s, fetching_time):
     exchange_class = getattr(ccxt, exchange_id)
     exchange = exchange_class({'enableRateLimit': True, 'asyncio_loop': loop})
-    input_coroutines = [fetch_ohlcvs_continuously(
-      exchange, timeframe, symbol, windows_s, fetching_time
-    ) for symbol in symbols]
+    input_coroutines = [
+        fetch_ohlcvs_continuously(
+            exchange, timeframe, symbol, windows_s, fetching_time
+        ) for symbol in symbols
+    ]
     results = await asyncio.gather(*input_coroutines, return_exceptions=True)
     await exchange.close()
     return exchange.extend(*results)
