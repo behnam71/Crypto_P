@@ -155,9 +155,6 @@ def main_process(args, binance):
     ## Create Data Feeds
     def create_env(config):
         coin = "BTC"
-        dataset = pd.read_csv('/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/binance.csv', 
-                              low_memory=False, 
-                              index_col=[0])
 
         with open("/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/indicators.txt", "r") as file:
             indicators_list = eval(file.readline())
@@ -325,6 +322,9 @@ if __name__ == "__main__":
     else:
         from tensortrade.exchanges.simulated import SimulatedExchange
         
+        candles = pd.read_csv('/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/binance.csv', 
+                              low_memory=False, 
+                              index_col=[0])
         # === EXCHANGE ===
         # Commission on Binance is 0.075% on the lowest level, using BNB (https://www.binance.com/en/fee/schedule)
         binance = SimulatedExchange(data_frame=candles, 
