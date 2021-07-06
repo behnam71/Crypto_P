@@ -34,8 +34,6 @@ from tensortrade.features.scalers import MinMaxNormalizer
 from tensortrade.features.stationarity import FractionalDifference
 from tensortrade.features.indicators.talib_indicator import TAlibIndicator
 
-from continuously_Data import fetchData
-
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
