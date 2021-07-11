@@ -27,7 +27,7 @@ from ray import tune
 from tensortrade.environments import TradingEnvironment
 from tensortrade.rewards import RiskAdjustedReturns
 from tensortrade.actions import ManagedRiskOrders
-from tensortrade.instruments import BTC, USD, Quantity
+from tensortrade.instruments import BTC, USDT, Quantity
 from tensortrade.wallets import Wallet, Portfolio
 from tensortrade.features import FeaturePipeline
 from tensortrade.features.scalers import MinMaxNormalizer
@@ -80,17 +80,21 @@ parser.add_argument(
 parser.add_argument(
     "--online",
     type=bool,
-    default=False,
     help="Testing online or offline."
     )
 parser.add_argument(
     "--window_size",
     type=int,
-    default=1,
+    default=20,
+    help="Testing online or offline."
+    )
+parser.add_argument(
+    "--train",
+    type=bool,
     help="Testing online or offline."
     )
 
-def main_process(args, binance):
+def start(args):
     # Declare when training can stop & Never more than 200
     maxIter = args.stop_iters
 
@@ -106,7 +110,7 @@ def main_process(args, binance):
     max_allowed_loss = 0.95
 
     # === CONFIG FOR AGENT ===
-    config = {
+    configuration = {
         # === ENV Parameters ===
         "env": "TradingEnv",
         "env_config": {
@@ -151,54 +155,91 @@ def main_process(args, binance):
 
     # Setup Trading Environment
     ## Create Data Feeds
-    def create_env(config):
-        coin = "BTC"
+    def create_env(configuration):
+        coin = BTC
+        def main_function():
+            # === ORDER MANAGEMENT SYSTEM === 
+            # Start with 100.000 usdt and 0 assets
+            cash = Wallet(exchange, Quantity(USDT, 10000))
+            asset = Wallet(exchange, Quantity(coin, 0))
+            portfolio = Portfolio(USDT, [
+                cash,
+                asset
+            ])
 
-        with open("/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/indicators.txt", "r") as file:
-            indicators_list = eval(file.readline())
-        TAlib_Indicator = TAlibIndicator(indicators_list)
-        feature_pipeline = FeaturePipeline(
-            steps=[TAlib_Indicator]
-        )
+            with open("/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/indicators.txt", "r") as file:
+                indicators_list = eval(file.readline())
+            TAlib_Indicator = TAlibIndicator(indicators_list)
+            feature_pipeline = FeaturePipeline(
+                steps=[TAlib_Indicator]
+            )
 
-        # === ORDER MANAGEMENT SYSTEM === 
-        # Start with 100.000 usd and 0 assets
-        cash = Wallet(binance, Quantity(USD, 10000))
-        asset = Wallet(binance, Quantity(BTC, 0))
-        portfolio = Portfolio(USD, [
-            cash,
-            asset
-        ])
+            # === REWARDSCHEME === 
+            reward_scheme = reward_scheme = RiskAdjustedReturns(
+                return_algorithm='sharpe', 
+                risk_free_rate=0, 
+                target_returns=0, 
+            )     
 
-        # === REWARDSCHEME === 
-        reward_scheme = reward_scheme = RiskAdjustedReturns(
-            return_algorithm='sharpe', 
-            risk_free_rate=0, 
-            target_returns=0, 
-        )     
+            # === ACTIONSCHEME ===
+            action_scheme = ManagedRiskOrders(
+                pairs=[coin/USDT],
+                stop_loss_percentages = [0.02], 
+                take_profit_percentages = [0.03], 
+                trade_sizes=2
+            )
 
-        # === ACTIONSCHEME ===
-        action_scheme = ManagedRiskOrders(
-            pairs=[USD/BTC],
-            stop_loss_percentages = [0.02], 
-            take_profit_percentages = [0.03], 
-            trade_sizes=2
-        )
+            # === RESULT === 
+            environment = TradingEnvironment(exchange=exchange,
+                                             portfolio=portfolio,
+                                             observation_lows=[-1.0e+10 ] * 25,
+                                             observation_highs=[1.0e+10 ] * 25,
+                                             TA_features=16,
+                                             action_scheme=action_scheme,
+                                             reward_scheme=reward_scheme,
+                                             feature_pipeline=feature_pipeline,
+                                             window_size=configuration["window_size"], # part of OBSERVER
+                                             observe_wallets=[coin, USDT])
+            return environment
 
-        # === RESULT === 
-        environment = TradingEnvironment(
-            exchange=binance,
-            portfolio=portfolio,
-            observation_lows=-1.0e+10,
-            observation_highs=1.0e+10,
-            TA_features=16,
-            action_scheme=action_scheme,
-            reward_scheme=reward_scheme,
-            feature_pipeline=feature_pipeline,
-            window_size=config["window_size"], # part of OBSERVER
-            observe_wallets=[USD, BTC]
-        )
-        return environment
+        if not(args.online):
+            from tensortrade.exchanges.simulated import SimulatedExchange
+            
+            candles = pd.read_csv('/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/binance.csv', 
+                                  low_memory=False, 
+                                  index_col=[0])
+            # === EXCHANGE ===
+            # Commission on Binance is 0.075% on the lowest level, using BNB (https://www.binance.com/en/fee/schedule)
+            exchange = SimulatedExchange(data_frame=candles, 
+                                         price_column="BTC/USDT_close",
+                                         commission=0.0075,
+                                         min_trade_price=10.0)
+            return main_function()
+
+        else:
+            import ccxt
+            from tensortrade import TradingContext
+            from tensortrade.exchanges.live import CCXTExchange
+        
+            config = {
+                'base_instrument': 'USDT',
+                'instruments': 'BTC',
+                'timeframe': '1m',
+                'exchanges': {
+                    'exchange': 'binance',
+                    'credentials': {
+                        'apiKey': 'SmweB9bNM2qpYkgl4zaQSFPpSzYpyoJ6B3BE9rCm0XYcAdIE0b7n6bm11e8jMwnI',  
+                        'secret': '8x6LtJztmIeGPZyiJOC7lVfg2ixCUYkhVV7CKVWq2LVlPh8mo3Ab7SMkaC8qTZLt',
+                    }
+                }
+            }
+            with TradingContext(**config):
+                exchange = CCXTExchange()
+                assert str(exchange._exchange) == 'Binance'
+                assert exchange._credentials == config['exchanges']['credentials']
+
+                return main_function()
+
 
     register_env("TradingEnv", create_env)
     
@@ -210,14 +251,14 @@ def main_process(args, binance):
         "rnn", TorchRNNModel if args.framework == "torch" else RNNModel)
     # === tune.run for Training ===
     # https://docs.ray.io/en/master/tune/api_docs/execution.html
-    if not(args.online):
+    if args.train:
         analysis = tune.run(
             args.alg,
             # https://docs.ray.io/en/master/tune/api_docs/stoppers.html
             stop={"training_iteration": maxIter,
             #"timesteps_total": args.stop_timesteps, "episode_reward_mean": args.stop_reward,
             },
-            config=config,
+            config=configuration,
             checkpoint_at_end=True,
             metric="episode_reward_mean",
             mode="max", 
@@ -238,11 +279,9 @@ def main_process(args, binance):
         # Get checkpoint based on highest episode_reward_mean
         from ray.tune import Analysis
         analysis = Analysis("~/ray_results/PPO")
-        checkpoint_path = analysis.get_best_checkpoint(
-            trial="~/ray_results/PPO/PPO_TradingEnv_f15df_00000_0_2021-06-22_08-29-21", 
-            metric="episode_reward_mean",
-            mode="max"
-        ) 
+        checkpoint_path = analysis.get_best_checkpoint(trial="~/ray_results/PPO/PPO_TradingEnv_f15df_00000_0_2021-06-22_08-29-21", 
+                                                       metric="episode_reward_mean",
+                                                       mode="max") 
         print("Checkpoint Path at: {}".format(str(checkpoint_path)))
 
         # === ALGORITHM SELECTION ===   
@@ -256,7 +295,7 @@ def main_process(args, binance):
 
         # === CREATE THE AGENT === 
         agent = algTr(
-            env="TradingEnv", config=config,
+            env="TradingEnv", config=configuration,
         )
         # Restore agent using best episode reward mean
         agent.restore(checkpoint_path)
@@ -264,10 +303,11 @@ def main_process(args, binance):
         # Instantiate the testing environment
         # Must have same settings for window_size and max_allowed_loss as the training env
         test_env = create_env({
-            "window_size": config["window_size"],
-            "max_allowed_loss": config["max_allowed_loss"],
+            "window_size": configuration["window_size"],
+            "max_allowed_loss": configuration["max_allowed_loss"],
         })
         render_env(test_env, agent)
+
     ray.shutdown()
 
 
@@ -308,32 +348,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
     # To prevent CUDNN_STATUS_ALLOC_FAILED error
     #tf.config.experimental.set_memory_growth(tf.config.experimental.list_physical_devices('GPU')[0], True)
-    if args.online:
-        import ccxt
-        from tensortrade.exchanges.live import CCXTExchange
-        
-        coinbase = ccxt.coinbasepro()
-        binance = CCXTExchange(exchange=coinbase, 
-                               base_instrument='USD')
-        main_process(args, binance)
-        
-    else:
-        from tensortrade.exchanges.simulated import SimulatedExchange
-        
-        candles = pd.read_csv('/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/binance.csv', 
-                              low_memory=False, 
-                              index_col=[0])
-        # === EXCHANGE ===
-        # Commission on Binance is 0.075% on the lowest level, using BNB (https://www.binance.com/en/fee/schedule)
-        binance = SimulatedExchange(data_frame=candles, 
-                                    price_column="close",
-                                    commission=0.0075,
-                                    min_trade_price=10.0)
-        
-        main_process(args, binance)
+    start(args)
 
 
     # tensorboard --logdir=C:\Users\Stephan\ray_results\PPO
 
-    # python core.py --alg PPO --c_Instrument BTC --num_cpus 3 --framework torch --stop_iters 120 --window_size 1
-    # python core.py --alg PPO --c_Instrument BTC --num_cpus 3 --framework torch --stop_iters 120 --online --window_size 1
+    # python core.py --alg PPO --c_Instrument BTC --num_cpus 3 --framework torch --stop_iters 120 --online True --window_size 7 --train True
+    # python core.py --alg PPO --c_Instrument BTC --num_cpus 3 --framework torch --stop_iters 120 --window_size 7 --train True
