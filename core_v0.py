@@ -213,7 +213,7 @@ def start(args):
             exchange = SimulatedExchange(data_frame=candles, 
                                          price_column="BTC/USDT_close",
                                          commission=0.0075,
-                                         min_trade_price=10.0)
+                                         min_trade_size=3e+2)
             return main_function()
 
         else:
