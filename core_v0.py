@@ -160,7 +160,7 @@ def start(args):
         def main_function():
             # === ORDER MANAGEMENT SYSTEM === 
             # Start with 100.000 usdt and 0 assets
-            cash = Wallet(exchange, Quantity(USDT, 10000))
+            cash = Wallet(exchange, Quantity(USDT, 7500))
             asset = Wallet(exchange, Quantity(coin, 0))
             portfolio = Portfolio(USDT, [
                 cash,
@@ -183,10 +183,10 @@ def start(args):
 
             # === ACTIONSCHEME ===
             action_scheme = ManagedRiskOrders(
-                pairs=[coin/USDT],
+                pairs=[USDT/BTC],
                 stop_loss_percentages = [0.02], 
                 take_profit_percentages = [0.03], 
-                trade_sizes=2
+                trade_sizes=100
             )
 
             # === RESULT === 
@@ -199,7 +199,7 @@ def start(args):
                                              reward_scheme=reward_scheme,
                                              feature_pipeline=feature_pipeline,
                                              window_size=configuration["window_size"], # part of OBSERVER
-                                             observe_wallets=[coin, USDT])
+                                             observe_wallets=[USDT, coin])
             return environment
 
         if not(args.online):
