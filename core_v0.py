@@ -44,7 +44,6 @@ from tensortrade.oms.orders import (
 )
 
 
-
 parser = argparse.ArgumentParser()
 parser.add_argument(
     "--alg",
@@ -79,11 +78,6 @@ parser.add_argument(
     default=9000.0,
     help="Reward at which we stop training.")
 parser.add_argument(
-    "--online",
-    type=bool,
-    help="Testing online or offline."
-    )
-parser.add_argument(
     "--window_size",
     type=int,
     default=20,
@@ -111,7 +105,7 @@ def start():
     # Lookback window for the TradingEnv
     # Increasing this too much can result in errors and overfitting, also increases the duration necessary for training
     # Value needs to be bigger than 1, otherwise it will take nothing in consideration
-    window_size = 10
+    window_size = config["window_size"]
 
     # 1 meaning he cant lose anything 0 meaning it can lose everything
     # Setting a high value results in quicker training time, but could result in overfitting
@@ -349,6 +343,7 @@ def start():
             "max_allowed_loss": max_allowed_loss,
             "train": False
         })
+        
         # === Render the environments ===
         candles = data_loading()
         # Divide the data in test (last 20%) and training (first 80%)
