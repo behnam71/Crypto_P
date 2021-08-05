@@ -21,7 +21,6 @@ from abc import abstractmethod
 from typing import Union, List, Callable
 
 
-
 class TAlibIndicator():
     """Adds one or more TAlib indicators to a data frame, based on existing open, high, low, and close column values."""
     def __init__(self, 
