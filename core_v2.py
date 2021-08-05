@@ -53,11 +53,6 @@ parser.add_argument(
     choices=["PPO", "A2C", "DQN"],
     default="PPO",
     help="The RLlib-registered algorithm to use.")
-parser.add_argument(
-    "--c_Instrument",
-    type=str,
-    choices=["BTC", "ETH", "DOGE"],
-    default="BTC")
 parser.add_argument("--num_cpus", type=int, default=2)
 parser.add_argument(
     "--framework",
@@ -92,8 +87,7 @@ parser.add_argument(
     "be achieved within --stop-timesteps AND --stop-iters.")
 
 def data_loading():
-    # amount=1 -> 500 rows of data
-    # candles = fetchData(symbol=(args.c_Instrument + "USDT"), amount=9, timeframe='4h') =======> developing
+    # candles = fetchData(symbol=() =======> developing
     candles = pd.read_csv('/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/binance.csv', sep=',', low_memory=False, index_col=[0])
     return candles
 
