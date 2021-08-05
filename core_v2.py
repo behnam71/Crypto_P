@@ -42,6 +42,8 @@ from tensortrade.oms.orders import (
     TradeSide,
     TradeType
 )
+from talib_indicator import TAlibIndicator
+
 
 
 parser = argparse.ArgumentParser()
@@ -91,7 +93,7 @@ parser.add_argument(
 
 def data_loading():
     # amount=1 -> 500 rows of data
-    # candles = fetchData(symbol=(args.c_Instrument + "USDT"), amount=9, timeframe='4h')
+    # candles = fetchData(symbol=(args.c_Instrument + "USDT"), amount=9, timeframe='4h') =======> developing
     candles = pd.read_csv('/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/binance.csv', sep=',', low_memory=False, index_col=[0])
     return candles
 
@@ -105,7 +107,7 @@ def start():
     # Lookback window for the TradingEnv
     # Increasing this too much can result in errors and overfitting, also increases the duration necessary for training
     # Value needs to be bigger than 1, otherwise it will take nothing in consideration
-    window_size = config["window_size"]
+    window_size = 10
 
     # 1 meaning he cant lose anything 0 meaning it can lose everything
     # Setting a high value results in quicker training time, but could result in overfitting
@@ -119,7 +121,7 @@ def start():
         "env_config" : {
             "window_size" : window_size,
             "max_allowed_loss" : max_allowed_loss,
-            "train" : True,
+            "train" : not(args.as_test),
         },
         # === RLLib parameters ===
         # https://docs.ray.io/en/master/rllib-training.html#common-parameters
@@ -162,20 +164,16 @@ def start():
     # Setup Trading Environment
     ## Create Data Feeds
     def create_env(config):
-        coin = "BTC"
+        coin = "BTC/USDT"
         coinInstrument = BTC
-    
+
         # Use config param to decide which data set to use
-        if config["train"] == True:
-            candles = data_loading()
-            # Add prefix in case of multiple assets
-            data = candles.add_prefix(coin + ":")
-            df = data; env_Data = candles
-            ta_Data = candles
-            p = Stream.source(df[(coin + ':close')].tolist(), dtype="float").rename(("USDT-" + coin))
- 
-        else:
-            p = Stream.placeholder(dtype="float").rename(("USDT-" + coin))
+        candles = data_loading()
+        # Add prefix in case of multiple assets
+        data = candles.add_prefix(coin + ":")
+        df = data; env_Data = candles
+        ta_Data = candles
+        p = Stream.source(df[(coin + ':close')].tolist(), dtype="float").rename(("USDT-" + coin))
 
         # === EXCHANGE ===
         # Commission on Binance is 0.075% on the lowest level, using BNB (https://www.binance.com/en/fee/schedule)
@@ -194,27 +192,21 @@ def start():
         ])
         
         # === OBSERVER ===
-        if config["train"] == True:
-            dataset = pd.DataFrame()
-            dataset = ta.add_all_ta_features(ta_Data, 'open', 'high', 'low', 'close', 'volume', fillna=True)
-            dataset.set_index('date', inplace = True)
-            dataset = dataset.add_prefix(coin + ":")
-            display(dataset.head(7))
-            with NameSpace("binance"):
-                streams = [
-                    Stream.source(dataset[c].tolist(), dtype="float").rename(c) for c in dataset.columns
-                ]
-            # This is everything the agent gets to see, when making decisions
-            feed = DataFeed(streams)
+        dataset = pd.DataFrame()
+        with open("/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/indicators.txt", "r") as file:
+            indicators_list = eval(file.readline())
+        TAlib_Indicator = TAlibIndicator(indicators_list)
+        dataset = TAlib_Indicator.transform(ta_Data)
+        dataset.set_index('date', inplace = True)
+        dataset = dataset.add_prefix(coin + ":")
+        display(dataset.head(200))
+        with NameSpace("binance"):
+            streams = [
+                Stream.source(dataset[c].tolist(), dtype="float").rename(c) for c in dataset.columns
+            ]
+        # This is everything the agent gets to see, when making decisions
+        feed = DataFeed(streams)
  
-        else:
-            from tensortrade.feed.core.feed import PushFeed
-            with NameSpace("binance"):
-                streams = [
-                    Stream.placeholder(dtype="float").rename(c) for c in ['open', 'high', 'low', 'close', 'volume']
-                ]
-            # This is everything the agent gets to see, when making decisions
-            feed = PushFeed(streams)
         
         # Compiles all the given stream together
         feed.compile()
@@ -244,7 +236,6 @@ def start():
             Stream.source(env_Data[c].tolist(), dtype="float").rename(c) for c in env_Data]
         )
         """
-
         # === RESULT === 
         env = default.create(
             portfolio=portfolio,
@@ -256,6 +247,7 @@ def start():
             window_size=config["window_size"], # part of OBSERVER
             max_allowed_loss=config["max_allowed_loss"], # STOPPER
             enable_logger=True,
+            train = config["train"],
             renderers=[
                 ScreenLogger,
                 FileLogger,
@@ -294,13 +286,11 @@ def start():
             #stop={"episode_len_mean" : (len(data) - dataEnd) - 1},
             config=config,
             checkpoint_at_end=True,
-            metric="episode_reward_mean",
-            mode="max",
             checkpoint_freq=1, # Necesasry to declare, in combination with Stopper
             checkpoint_score_attr="episode_reward_mean",
             #restore="~/ray_results/PPO",
             #resume=True,
-            #scheduler=asha_scheduler,
+            scheduler=asha_scheduler,
             #max_failures=5,
         )
         #if args.as_test:
@@ -312,9 +302,9 @@ def start():
         # https://docs.ray.io/en/master/tune/api_docs/analysis.html
         # Get checkpoint based on highest episode_reward_mean
         from ray.tune import Analysis
-        analysis = Analysis("~/ray_results/PPO")
+        analysis = Analysis("/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/ray_results/PPO")
         checkpoint_path = analysis.get_best_checkpoint(
-            trial="~/ray_results/PPO/PPO_TradingEnv_78abe_00000_0_2021-06-17_19-57-05",
+            trial="/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/ray_results/PPO/PPO_TradingEnv_5dde2_00000_0_2021-06-23_10-11-25",
             metric="episode_reward_mean",
             mode="max"
         ) 
@@ -333,6 +323,7 @@ def start():
         agent = algTr(
             env="TradingEnv", config=config,
         )
+        print("pppppppppppppppppppppppppppppppppppp")
         # Restore agent using best episode reward mean
         agent.restore(checkpoint_path)
 
@@ -343,35 +334,15 @@ def start():
             "max_allowed_loss": max_allowed_loss,
             "train": False
         })
-        
-        # === Render the environments ===
-        candles = data_loading()
-        # Divide the data in test (last 20%) and training (first 80%)
-        data_End = (int)(len(candles)*0.2)
-        """
-        train_env = create_env({
-            "window_size": window_size,
-            "max_allowed_loss": max_allowed_loss,
-            # Use the training set data
-            "train": True
-        })
-        train_Data = pd.DataFrame()
-        train_Data = candles[:-data_End]
-        print("Training on " + (str)(data_End) + " Rows")
-        train_Data.set_index('date', inplace = True)
-        render_env(train_env, agent, train_Data, args.c_Instrument)
-        """
-        test_Data = pd.DataFrame()
-        test_Data = candles[-data_End:]
-        print("Testing on " + (str)(data_End) + " Rows")
-        test_Data.set_index('date', inplace = True)
-        render_env(test_env, agent, test_Data, args.c_Instrument)
+
+        # === Render the environments (online) ===
+        render_env(test_env, agent)
 
     if ray.is_initialized():
         ray.shutdown()
 
 
-def render_env(env, agent, data, asset):
+def render_env(env, agent):
     # Run until done == True
     done = False
     obs = env.reset()
@@ -394,19 +365,15 @@ def render_env(env, agent, data, asset):
             info=info
         )
         obs, reward, done, info = env.step(action)
-        total_reward = total_reward + reward
         _prev_reward = reward
         _prev_action = action
         networth.append(info['net_worth'])
-        h_counter += 1
-        if (h_counter % 24) == 0:
-            print("\n\nNext Observer:"); pprint(env.observer.feed.next())
-            print("Selected Action: {}".format(str(action)))
-            print("Reward: {}".format(str(reward)))
-            print("Total Reward: {}".format(str(total_reward)))
-            print("NetWorth: {}".format(str(round(info['net_worth'], 2))))
-            print("Counter: {}".format(str(h_counter)))
-            sleep(2)
+        total_reward = total_reward + reward
+        print("Selected Action: {}".format(str(action)))
+        print("NetWorth: {}".format(str(round(info['net_worth'], 2))))
+        print("Reward: {}".format(str(reward)))
+        print("Total Reward: {}".format(str(total_reward)))
+        sleep(2)
 
     # Render the test environment
     env.render()
