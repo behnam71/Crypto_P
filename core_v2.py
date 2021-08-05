@@ -164,7 +164,7 @@ def start():
     # Setup Trading Environment
     ## Create Data Feeds
     def create_env(config):
-        coin = "BTC/USDT"
+        coin = "BTC"
         coinInstrument = BTC
 
         # Use config param to decide which data set to use
@@ -206,7 +206,6 @@ def start():
             ]
         # This is everything the agent gets to see, when making decisions
         feed = DataFeed(streams)
- 
         
         # Compiles all the given stream together
         feed.compile()
