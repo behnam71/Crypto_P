@@ -26,7 +26,7 @@ from ray import tune
 
 import tensortrade.env.default as default
 from tensortrade.feed.core import Stream, DataFeed, NameSpace
-from tensortrade.env.default.renderers import PlotlyTradingChart, FileLogger, ScreenLogger
+from tensortrade.env.default.renderers import PlotlyTradingChart, ScreenLogger
 from tensortrade.env.default.actions import TensorTradeActionScheme, ManagedRiskOrders
 from tensortrade.env.default.rewards import TensorTradeRewardScheme, SimpleProfit, RiskAdjustedReturns
 from tensortrade.env.generic import ActionScheme, TradingEnv, Renderer
@@ -62,7 +62,7 @@ parser.add_argument(
 parser.add_argument(
     "--stop_iters",
     type=int,
-    default=100,
+    default=10,
     help="Number of iterations to train.")
 parser.add_argument(
     "--stop_timesteps",
@@ -223,11 +223,6 @@ def start():
             save_format="html", # save the chart to an HTML file
             auto_open_html=True, # open the saved HTML chart in a new browser tab
         )
-        file_logger = FileLogger(
-            filename="example.log", # omit or None for automatic file name
-            path="/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/training_logs" # create a new directory if doesn't exist, None for no directory
-        )
-
         # Uses the OHCLV data passed to envData
         renderer_feed = DataFeed([
             Stream.source(env_Data[c].tolist(), dtype="float").rename(c) for c in env_Data]
@@ -246,10 +241,10 @@ def start():
             renderer_feed=renderer_feed,
             renderers=[
                 ScreenLogger,
-                file_logger,
                 chart_renderer
             ]
         )
+
         return env
 
     register_env("TradingEnv", create_env)
@@ -287,18 +282,12 @@ def start():
             checkpoint_at_end=True,
             checkpoint_freq=1, # Necesasry to declare, in combination with Stopper
             checkpoint_score_attr="episode_reward_mean",
+            local_dir="./ray_results",
             #restore="~/ray_results/PPO",
             #resume=True,
             scheduler=asha_scheduler,
             #max_failures=5,
         )
-
-        print("NetWorth Ploting:")
-        # Direct Performance and Net Worth Plotting
-        performance = pd.DataFrame.from_dict(env.action_scheme.portfolio.performance, orient='index')
-        performance.plot()
-
-        portfolio.performance.net_worth.plot()
 
         #if args.as_test:
             #check_learning_achieved(analysis, args.stop_reward)
@@ -311,7 +300,7 @@ def start():
         from ray.tune import Analysis
         analysis = Analysis("/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/ray_results/PPO")
         checkpoint_path = analysis.get_best_checkpoint(
-            trial="/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/ray_results/PPO/PPO_TradingEnv_5dde2_00000_0_2021-06-23_10-11-25",
+            trial="/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/ray_results/PPO/PPO_TradingEnv_a8ab8_00000_0_2021-08-06_16-43-07",
             metric="episode_reward_mean",
             mode="max"
         ) 
