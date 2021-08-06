@@ -216,28 +216,38 @@ def start():
                                           trade_sizes=100
                                           )
 
-        """
         # === RENDERER ===
+        chart_renderer = PlotlyTradingChart(
+            display=True, # show the chart on screen (default)
+            height=800, # affects both displayed and saved file height. None for 100% height.
+            save_format="html", # save the chart to an HTML file
+            auto_open_html=True, # open the saved HTML chart in a new browser tab
+        )
+        file_logger = FileLogger(
+            filename="example.log", # omit or None for automatic file name
+            path="/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/training_logs" # create a new directory if doesn't exist, None for no directory
+        )
+
         # Uses the OHCLV data passed to envData
         renderer_feed = DataFeed([
             Stream.source(env_Data[c].tolist(), dtype="float").rename(c) for c in env_Data]
         )
-        """
+
         # === RESULT === 
         env = default.create(
             portfolio=portfolio,
             action_scheme=action_scheme,
             reward_scheme=reward_scheme,
             feed=feed,
-            #renderer_feed=renderer_feed,
-            renderer=PlotlyTradingChart(), # PositionChangeChart()
             window_size=config["window_size"], # part of OBSERVER
             max_allowed_loss=config["max_allowed_loss"], # STOPPER
             enable_logger=True,
             train = config["train"],
+            renderer_feed=renderer_feed,
             renderers=[
                 ScreenLogger,
-                FileLogger,
+                file_logger,
+                chart_renderer
             ]
         )
         return env
@@ -268,9 +278,11 @@ def start():
         analysis = tune.run(
             args.alg,
             # https://docs.ray.io/en/master/tune/api_docs/stoppers.html
-            #stop=ExperimentPlateauStopper(metric="episode_reward_mean", std=0.1, top=10, mode="max", patience=0),
-            stop={"training_iteration": 22},
-            #stop={"episode_len_mean" : (len(data) - dataEnd) - 1},
+            stop = {
+                "training_iteration": args.stop_iters,
+                "timesteps_total": args.stop_timesteps,
+                #"episode_reward_mean": args.stop_reward,
+            },
             config=config,
             checkpoint_at_end=True,
             checkpoint_freq=1, # Necesasry to declare, in combination with Stopper
@@ -280,6 +292,14 @@ def start():
             scheduler=asha_scheduler,
             #max_failures=5,
         )
+
+        print("NetWorth Ploting:")
+        # Direct Performance and Net Worth Plotting
+        performance = pd.DataFrame.from_dict(env.action_scheme.portfolio.performance, orient='index')
+        performance.plot()
+
+        portfolio.performance.net_worth.plot()
+
         #if args.as_test:
             #check_learning_achieved(analysis, args.stop_reward)
 
@@ -364,13 +384,7 @@ def render_env(env, agent):
     # Render the test environment
     env.render()
 
-    print("NetWorth Ploting:")
-    # Direct Performance and Net Worth Plotting
-    performance = pd.DataFrame.from_dict(env.action_scheme.portfolio.performance, orient='index')
-    performance.plot()
-    portfolio.performance.net_worth.plot()
-
-
+    
 # === CALLBACK ===
 def get_net_worth(info):
     # info is a dict containing: env, policy and info["episode"] is an evaluation episode
