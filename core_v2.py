@@ -384,5 +384,5 @@ if __name__ == "__main__":
     start()
 
     # tensorboard --logdir=C:\Users\Stephan\ray_results\PPO
-    # python core.py --alg PPO --c_Instrument BTC --num_cpus 3 --framework torch --stop_iters 120
-    # python core.py --alg PPO --c_Instrument BTC --num_cpus 3 --framework torch --stop_iters 120 --as_test
+    # python core.py --alg PPO --num_cpus 3 --framework torch --stop_iters 120
+    # python core.py --alg PPO --num_cpus 3 --framework torch --stop_iters 120 --as_test
