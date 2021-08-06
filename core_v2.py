@@ -75,12 +75,6 @@ parser.add_argument(
     default=9000.0,
     help="Reward at which we stop training.")
 parser.add_argument(
-    "--window_size",
-    type=int,
-    default=20,
-    help="Testing online or offline."
-    )
-parser.add_argument(
     "--as_test",
     action="store_true",
     help="Whether this script should be run as a test: --stop-reward must "
@@ -219,7 +213,7 @@ def start():
         action_scheme = ManagedRiskOrders(stop = [0.02],
                                           take = [0.03],
                                           durations=[100],
-                                          trade_sizes=10
+                                          trade_sizes=100
                                           )
 
         """
@@ -316,7 +310,6 @@ def start():
         agent = algTr(
             env="TradingEnv", config=config,
         )
-        print("pppppppppppppppppppppppppppppppppppp")
         # Restore agent using best episode reward mean
         agent.restore(checkpoint_path)
 
@@ -391,5 +384,5 @@ if __name__ == "__main__":
     start()
 
     # tensorboard --logdir=C:\Users\Stephan\ray_results\PPO
-    # python core.py --alg PPO --c_Instrument BTC --num_cpus 3 --framework torch --stop_iters 120 --window_size 7
-    # python core.py --alg PPO --c_Instrument BTC --num_cpus 3 --framework torch --stop_iters 120 --window_size 7 --as_test
+    # python core.py --alg PPO --c_Instrument BTC --num_cpus 3 --framework torch --stop_iters 120
+    # python core.py --alg PPO --c_Instrument BTC --num_cpus 3 --framework torch --stop_iters 120 --as_test
