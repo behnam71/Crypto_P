@@ -1,47 +1,33 @@
 """Example of using a custom RNN keras model."""
 import argparse
 import os
-import numpy as np
-import matplotlib.pyplot as plt
 import pandas as pd
-import ta
 from IPython.display import display
-from time import sleep
-from pprint import pprint
 
-import tensorflow as tf
+#import tensorflow as tf
 
 import ray
 from ray.rllib.examples.models.rnn_model import RNNModel, TorchRNNModel
 from ray.rllib.models import ModelCatalog
 from ray.rllib.utils.test_utils import check_learning_achieved
 import ray.rllib.agents.ppo as ppo
-import ray.rllib.agents.dqn as dqn
-import ray.rllib.agents.a3c.a2c as a2c
+#import ray.rllib.agents.dqn as dqn
+#import ray.rllib.agents.a3c.a2c as a2c
 from ray.tune.registry import register_env
 from ray.tune.schedulers import ASHAScheduler
-from ray.tune.stopper import ExperimentPlateauStopper
-from ray.rllib.utils.exploration.epsilon_greedy import EpsilonGreedy
 from ray import tune
 
 import tensortrade.env.default as default
 from tensortrade.feed.core import Stream, DataFeed, NameSpace
 from tensortrade.env.default.renderers import PlotlyTradingChart, ScreenLogger
-from tensortrade.env.default.actions import TensorTradeActionScheme, ManagedRiskOrders
-from tensortrade.env.default.rewards import TensorTradeRewardScheme, SimpleProfit, RiskAdjustedReturns
-from tensortrade.env.generic import ActionScheme, TradingEnv, Renderer
+from tensortrade.env.default.actions import ManagedRiskOrders
+from tensortrade.env.default.rewards import RiskAdjustedReturns
+from tensortrade.env.generic import TradingEnv
 from tensortrade.oms.services.execution.simulated import execute_order
-from tensortrade.core import Clock
-from tensortrade.oms.instruments import ExchangePair, Instrument
 from tensortrade.oms.exchanges import Exchange, ExchangeOptions
 from tensortrade.oms.wallets import Wallet, Portfolio
 from tensortrade.oms.instruments import USDT, BTC
-from tensortrade.oms.orders import (
-    Order,
-    proportion_order,
-    TradeSide,
-    TradeType
-)
+
 from talib_indicator import TAlibIndicator
 
 
@@ -358,6 +344,7 @@ def render_env(env, agent):
     # Render the test environment
     env.render()
 
+    
 # === CALLBACK ===
 def get_net_worth(info):
     # info is a dict containing: env, policy and info["episode"] is an evaluation episode
