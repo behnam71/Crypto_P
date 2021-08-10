@@ -100,7 +100,7 @@ def start():
         # https://docs.ray.io/en/master/rllib-training.html#common-parameters
         # === Settings for Rollout Worker processes ===
         # Number of rollout worker actors to create for parallel sampling.
-        "num_workers" : 1, # Amount of CPU cores - 1
+        "num_workers" : args.num_cpus - 1, # Amount of CPU cores - 1
 
         # === Environment Settings ===
         # Discount factor of the MDP.
@@ -356,5 +356,5 @@ if __name__ == "__main__":
     start()
 
     # tensorboard --logdir=C:\Users\Stephan\ray_results\PPO
-    # python core.py --alg PPO --num_cpus 3 --framework torch --stop_iters 120
-    # python core.py --alg PPO --num_cpus 3 --framework torch --stop_iters 120 --as_test
+    # python core.py --alg PPO --num_cpus 4 --framework torch --stop_iters 120
+    # python core.py --alg PPO --num_cpus 4 --framework torch --stop_iters 120 --as_test
