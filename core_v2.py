@@ -31,7 +31,6 @@ from tensortrade.oms.instruments import USDT, BTC
 from talib_indicator import TAlibIndicator
 
 
-
 parser = argparse.ArgumentParser()
 parser.add_argument(
     "--alg",
@@ -344,7 +343,6 @@ def render_env(env, agent):
     # Render the test environment
     env.render()
 
-    
 # === CALLBACK ===
 def get_net_worth(info):
     # info is a dict containing: env, policy and info["episode"] is an evaluation episode
