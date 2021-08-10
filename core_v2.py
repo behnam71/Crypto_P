@@ -166,7 +166,7 @@ def start():
         # === EXCHANGE ===
         # Commission on Binance is 0.075% on the lowest level, using BNB (https://www.binance.com/en/fee/schedule)
         binance_options = ExchangeOptions(commission=0.0075, min_trade_price=10.0)
-        binance = Exchange("binance", service=execute_order, options=binance_options)(
+        binance = Exchange("binance", service=execute_order, t_signal=config["train"], options=binance_options)(
             p
         )
 
@@ -187,7 +187,8 @@ def start():
         dataset = TAlib_Indicator.transform(ta_Data)
         dataset.set_index('date', inplace = True)
         dataset = dataset.add_prefix(coin + ":")
-        display(dataset.head(200))
+        if config["train"]:
+            display(dataset.head(200))
         with NameSpace("binance"):
             streams = [
                 Stream.source(dataset[c].tolist(), dtype="float").rename(c) for c in dataset.columns
@@ -237,7 +238,7 @@ def start():
             window_size=config["window_size"], # part of OBSERVER
             max_allowed_loss=config["max_allowed_loss"], # STOPPER
             enable_logger=True,
-            train = config["train"],
+            t_signal=config["train"],
             renderer_feed=renderer_feed,
             renderers=[
                 ScreenLogger,
@@ -249,6 +250,7 @@ def start():
 
     register_env("TradingEnv", create_env)
 
+    """
     # === Scheduler ===
     # Currenlty not in use
     # https://docs.ray.io/en/master/tune/api_docs/schedulers.html
@@ -261,6 +263,7 @@ def start():
         reduction_factor=3,
         brackets=1
     )
+    """
 
     if not ray.is_initialized():
         ray.init(local_mode=True)
@@ -282,10 +285,10 @@ def start():
             checkpoint_at_end=True,
             checkpoint_freq=1, # Necesasry to declare, in combination with Stopper
             checkpoint_score_attr="episode_reward_mean",
-            local_dir="./ray_results",
             #restore="~/ray_results/PPO",
             #resume=True,
-            scheduler=asha_scheduler,
+            local_dir="./ray_results",
+            #scheduler=asha_scheduler,
             #max_failures=5,
         )
 
@@ -341,39 +344,20 @@ def render_env(env, agent):
     # Run until done == True
     done = False
     obs = env.reset()
-    # Start with initial capital
-    networth = [0]
-
-    _prev_action = np.zeros_like(env.action_space.sample())
-    _prev_reward = 0
-    info = {}
     state = agent.get_policy().get_initial_state()
-    total_reward = 0
-    h_counter = 0
+
     print("Start Interaction ...")
     while not done:
-        action, state, fetch = agent.compute_action(
+        action, state, _ = agent.compute_action(
             obs,
             state=state,
-            prev_action=_prev_action,
-            prev_reward=_prev_reward,
-            info=info
         )
-        obs, reward, done, info = env.step(action)
-        _prev_reward = reward
-        _prev_action = action
-        networth.append(info['net_worth'])
-        total_reward = total_reward + reward
-        print("Selected Action: {}".format(str(action)))
-        print("NetWorth: {}".format(str(round(info['net_worth'], 2))))
-        print("Reward: {}".format(str(reward)))
-        print("Total Reward: {}".format(str(total_reward)))
-        sleep(2)
+        print("\nSelected Action: {}".format(str(action)))
+        obs = env.step(action)
 
     # Render the test environment
     env.render()
 
-    
 # === CALLBACK ===
 def get_net_worth(info):
     # info is a dict containing: env, policy and info["episode"] is an evaluation episode
