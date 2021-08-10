@@ -105,10 +105,13 @@ def start():
         # === Environment Settings ===
         # Discount factor of the MDP.
         # Lower gamma values will put more weight on short-term gains, whereas higher gamma values will put more weight towards long-term gains. 
-        "gamma" : 0, # default = 0.99 
-        #Use GPUs iff "RLLIB_NUM_GPUS" env var set to > 0.
+        "gamma" : 0, # default = 0.99
+        
+        # Use GPUs iff "RLLIB_NUM_GPUS" env var set to > 0.
         "num_gpus": int(os.environ.get("RLLIB_NUM_GPUS", "0")),
+        
         "num_sgd_iter": 5,
+        
         #"lr" : 0.01, # default = 0.00005 && Higher lr fits training model better, but causes overfitting 
         #"clip_rewards": True, 
         #"observation_filter": "MeanStdFilter",
