@@ -1,4 +1,3 @@
-
 """Example of using a custom RNN keras model."""
 import argparse
 import os
@@ -33,6 +32,7 @@ from talib_indicator import TAlibIndicator
 
 import tickers
 import balance
+import BinanceData
 
 
 parser = argparse.ArgumentParser()
@@ -75,7 +75,7 @@ parser.add_argument(
     "be achieved within --stop-timesteps AND --stop-iters.")
 
 def data_loading():
-    # candles = fetchData(symbol=() =======> developing
+    #candles = BinanceData
     candles = pd.read_csv('/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/binance.csv', sep=',', low_memory=False, index_col=[0])
     return candles
 
