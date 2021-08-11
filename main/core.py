@@ -165,7 +165,7 @@ def start():
 
         # === EXCHANGE ===
         # Commission on Binance is 0.075% on the lowest level, using BNB (https://www.binance.com/en/fee/schedule)
-        binance_options = ExchangeOptions(commission=0.0075, min_trade_price=10.0)
+        binance_options = ExchangeOptions(commission=0.0075)
         binance = Exchange("binance", service=execute_order, t_signal=config["train"], options=binance_options)(
             p
         )
@@ -179,7 +179,7 @@ def start():
             if not(config["train"]):
                 usdt_balance, quote_balance = balance.main(coin)
             else:
-                usdt_balance = 100000
+                usdt_balance = 1000
                 quote_balance = 0
         else:
             symbol_Instrument = BTC
@@ -189,7 +189,7 @@ def start():
             if not(config["train"]):
                 usdt_balance, quote_balance = balance.main(coin)
             else:
-                usdt_balance = 100000
+                usdt_balance = 1000
                 quote_balance = 0
 
         cash = Wallet(binance, usdt_balance * USDT)
