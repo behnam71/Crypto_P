@@ -8,7 +8,6 @@ sys.path.append(root + '/python')
 import ccxt  # noqa: E402
 
 
-
 def main(symbol):
     print('Instantiating binance')
     # instantiate the exchange by id
