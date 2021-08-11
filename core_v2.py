@@ -1,3 +1,4 @@
+
 """Example of using a custom RNN keras model."""
 import argparse
 import os
@@ -26,9 +27,12 @@ from tensortrade.env.generic import TradingEnv
 from tensortrade.oms.services.execution.simulated import execute_order
 from tensortrade.oms.exchanges import Exchange, ExchangeOptions
 from tensortrade.oms.wallets import Wallet, Portfolio
-from tensortrade.oms.instruments import USDT, BTC
+from tensortrade.oms.instruments import USDT, BTC, DOGE
 
 from talib_indicator import TAlibIndicator
+
+import tickers
+import balance
 
 
 parser = argparse.ArgumentParser()
@@ -38,6 +42,11 @@ parser.add_argument(
     choices=["PPO", "A2C", "DQN"],
     default="PPO",
     help="The RLlib-registered algorithm to use.")
+parser.add_argument(
+    "--coin",
+    type=str,
+    choices=["BTC", "DOGE"],
+    default="BTC")
 parser.add_argument("--num_cpus", type=int, default=2)
 parser.add_argument(
     "--framework",
@@ -101,7 +110,7 @@ def start():
         # === Settings for Rollout Worker processes ===
         # Number of rollout worker actors to create for parallel sampling.
         "num_workers" : args.num_cpus - 1, # Amount of CPU cores - 1
-        "num_envs_per_worker": 20,
+        "num_envs_per_worker": 1,
         
         "num_sgd_iter": 5,
         
@@ -142,8 +151,8 @@ def start():
     # Setup Trading Environment
     ## Create Data Feeds
     def create_env(config):
-        coin = "BTC"
-        coinInstrument = BTC
+        coin = args.coin
+        print("coinInstrument: {}".format(coin))
 
         # Use config param to decide which data set to use
         candles = data_loading()
@@ -161,9 +170,29 @@ def start():
         )
 
         # === ORDER MANAGEMENT SYSTEM ===
-        # Start with 100.000 usd and 0 assets
-        cash = Wallet(binance, 100000 * USDT)
-        asset = Wallet(binance, 0 * coinInstrument)
+        if coin == 'DOGE':
+            coinInstrument = DOGE
+            price = tickers.main(coin)
+            min_order_abs = price * 10
+            print("minimum order size: {}".format(str(min_order_abs)))
+            if config["train"]:
+                usdt_balance, balance = balance.main(coin)
+            else:
+                usdt_balance = 100000
+                balance = 0
+        else:
+            coinInstrument = BTC
+            price = tickers.main(coin)
+            min_order_abs = price / 1000
+            print("minimum order size: {}".format(str(min_order_abs)))
+            if config["train"]:
+                usdt_balance, balance = balance.main(coin)
+            else:
+                usdt_balance = 100000
+                balance = 0
+
+        cash = Wallet(binance, usdt_balance * USDT)
+        asset = Wallet(binance, balance * coinInstrument)
         portfolio = Portfolio(USDT, [
             cash,
             asset
@@ -201,12 +230,13 @@ def start():
 
         # === ACTIONSCHEME ===
         # SimpleOrders() or ManagedRiskOrders() or BSH()
-        action_scheme = ManagedRiskOrders(stop = [0.02],
-                                          take = [0.03],
-                                          durations=[100],
-                                          trade_sizes=100,
-                                          min_order_abs=45
-                                          )
+        action_scheme = ManagedRiskOrders(
+            stop = [0.02],
+            take = [0.03],
+            durations=[100],
+            trade_sizes=100,
+            min_order_abs=min_order_abs
+        )
 
         # === RENDERER ===
         chart_renderer = PlotlyTradingChart(
@@ -362,5 +392,5 @@ if __name__ == "__main__":
     start()
 
     # tensorboard --logdir=C:\Users\Stephan\ray_results\PPO
-    # python core.py --alg PPO --num_cpus 4 --framework torch --stop_iters 120
-    # python core.py --alg PPO --num_cpus 4 --framework torch --stop_iters 120 --as_test
+    # python core.py --alg PPO --coin "DOGE" --num_cpus 4 --framework torch --stop_iters 120
+    # python core.py --alg PPO --coin "DOGE" --num_cpus 4 --framework torch --stop_iters 120 --as_test
