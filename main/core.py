@@ -43,10 +43,10 @@ parser.add_argument(
     default="PPO",
     help="The RLlib-registered algorithm to use.")
 parser.add_argument(
-    "--coin",
+    "--symbol",
     type=str,
-    choices=["BTC", "DOGE"],
-    default="BTC")
+    choices=["BTC/USDT", "DOGE/USDT"],
+    default="BTC/USDT")
 parser.add_argument("--num_cpus", type=int, default=2)
 parser.add_argument(
     "--framework",
@@ -151,8 +151,9 @@ def start():
     # Setup Trading Environment
     ## Create Data Feeds
     def create_env(config):
-        coin = args.coin
-        print("coinInstrument: {}".format(coin))
+        symbol = args.symbol
+        coin = symbol.split("/")[0]
+        print("symbol_Instrument: {}".format(symbol))
 
         # Use config param to decide which data set to use
         candles = data_loading()
@@ -170,29 +171,29 @@ def start():
         )
 
         # === ORDER MANAGEMENT SYSTEM ===
-        if coin == 'DOGE':
-            coinInstrument = DOGE
-            price = tickers.main(coin)
+        if symbol == 'DOGE/USDT':
+            symbol_Instrument = DOGE
+            price = tickers.main(symbol)
             min_order_abs = price * 10
             print("minimum order size: {}".format(str(min_order_abs)))
-            if config["train"]:
-                usdt_balance, balance = balance.main(coin)
+            if not(config["train"]):
+                usdt_balance, quote_balance = balance.main(coin)
             else:
                 usdt_balance = 100000
-                balance = 0
+                quote_balance = 0
         else:
-            coinInstrument = BTC
-            price = tickers.main(coin)
+            symbol_Instrument = BTC
+            price = tickers.main(symbol)
             min_order_abs = price / 1000
             print("minimum order size: {}".format(str(min_order_abs)))
-            if config["train"]:
-                usdt_balance, balance = balance.main(coin)
+            if not(config["train"]):
+                usdt_balance, quote_balance = balance.main(coin)
             else:
                 usdt_balance = 100000
-                balance = 0
+                quote_balance = 0
 
         cash = Wallet(binance, usdt_balance * USDT)
-        asset = Wallet(binance, balance * coinInstrument)
+        asset = Wallet(binance, quote_balance * symbol_Instrument)
         portfolio = Portfolio(USDT, [
             cash,
             asset
@@ -392,5 +393,5 @@ if __name__ == "__main__":
     start()
 
     # tensorboard --logdir=C:\Users\Stephan\ray_results\PPO
-    # python core.py --alg PPO --coin "DOGE" --num_cpus 4 --framework torch --stop_iters 120
-    # python core.py --alg PPO --coin "DOGE" --num_cpus 4 --framework torch --stop_iters 120 --as_test
+    # python core.py --alg PPO --symbol "DOGE/USDT" --num_cpus 4 --framework torch --stop_iters 120
+    # python core.py --alg PPO --symbol "DOGE/USDT" --num_cpus 4 --framework torch --stop_iters 120 --as_test
