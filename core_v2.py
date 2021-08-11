@@ -80,7 +80,7 @@ def start():
     # Lookback window for the TradingEnv
     # Increasing this too much can result in errors and overfitting, also increases the duration necessary for training
     # Value needs to be bigger than 1, otherwise it will take nothing in consideration
-    window_size = 10
+    window_size = 12
 
     # 1 meaning he cant lose anything 0 meaning it can lose everything
     # Setting a high value results in quicker training time, but could result in overfitting
@@ -101,6 +101,10 @@ def start():
         # === Settings for Rollout Worker processes ===
         # Number of rollout worker actors to create for parallel sampling.
         "num_workers" : args.num_cpus - 1, # Amount of CPU cores - 1
+        "num_envs_per_worker": 20,
+        "num_sgd_iter": 5,
+        "vf_loss_coeff": 1e-5,
+        "entropy_coeff": 0.001,
 
         # === Environment Settings ===
         # Discount factor of the MDP.
@@ -109,15 +113,11 @@ def start():
         
         # Use GPUs iff "RLLIB_NUM_GPUS" env var set to > 0.
         "num_gpus": int(os.environ.get("RLLIB_NUM_GPUS", "0")),
-        
-        "num_sgd_iter": 5,
-        
+                
         #"lr" : 0.01, # default = 0.00005 && Higher lr fits training model better, but causes overfitting 
         #"clip_rewards": True, 
         #"observation_filter": "MeanStdFilter",
         #"lambda": 0.72,
-        #"vf_loss_coeff": 0.5,
-        #"entropy_coeff": 0.01,
         #"batch_mode": "complete_episodes",
 
         # === Debug Settings ===
@@ -202,7 +202,8 @@ def start():
         action_scheme = ManagedRiskOrders(stop = [0.02],
                                           take = [0.03],
                                           durations=[100],
-                                          trade_sizes=100
+                                          trade_sizes=100,
+                                          min_order_abs=45
                                           )
 
         # === RENDERER ===
