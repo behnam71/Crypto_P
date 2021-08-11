@@ -22,7 +22,7 @@ def main(symbol):
        binanceBalance = binance.fetch_balance()
        # output the result
        print("USDT_Balance: {}".format(str(binanceBalance['free']['USDT'])))
-       print("Balance: {}".format(str(binanceBalance['free'][symbol])))
+       print("Balance: {}".format(str(binanceBalance['free']['BNB'])))
        return float(binanceBalance['free']['USDT']), float(binanceBalance['free']['BTC'])
 
     except ccxt.DDoSProtection as e:
@@ -33,7 +33,7 @@ def main(symbol):
         print(type(e).__name__, e.args, 'Exchange Not Available due to downtime or maintenance (ignoring)')
     except ccxt.AuthenticationError as e:
         print(type(e).__name__, e.args, 'Authentication Error (missing API keys, ignoring)')
-
+        
 
 if __name__ == "__main__":
     main(symbol)
