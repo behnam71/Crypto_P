@@ -76,7 +76,7 @@ parser.add_argument(
 
 def data_loading():
     #candles = BinanceData
-    candles = pd.read_csv('/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/binance.csv', sep=',', low_memory=False, index_col=[0])
+    candles = pd.read_csv('/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/binance_DOGE.csv', sep=',', low_memory=False, index_col=[0])
     return candles
 
 def start():
@@ -392,6 +392,6 @@ if __name__ == "__main__":
     #tf.config.experimental.set_memory_growth(tf.config.experimental.list_physical_devices('GPU')[0], True)
     start()
 
-    # tensorboard --logdir=C:\Users\Stephan\ray_results\PPO
+    # tensorboard --logdir=/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/ray_results/PPO
     # python core.py --alg PPO --symbol "DOGE/USDT" --num_cpus 4 --framework torch --stop_iters 120
     # python core.py --alg PPO --symbol "DOGE/USDT" --num_cpus 4 --framework torch --stop_iters 120 --as_test
