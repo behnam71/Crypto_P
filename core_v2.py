@@ -102,7 +102,9 @@ def start():
         # Number of rollout worker actors to create for parallel sampling.
         "num_workers" : args.num_cpus - 1, # Amount of CPU cores - 1
         "num_envs_per_worker": 20,
+        
         "num_sgd_iter": 5,
+        
         "vf_loss_coeff": 1e-5,
         "entropy_coeff": 0.001,
 
