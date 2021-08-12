@@ -175,7 +175,7 @@ def start():
         if symbol == 'DOGE/USDT':
             symbol_Instrument = DOGE
             price = tickers.main(symbol)
-            min_order_abs = math.ceil(price*10)
+            min_order_abs = float(math.ceil(price*10))
             print("minimum order size: {}".format(str(min_order_abs)))
             if not(config["train"]):
                 usdt_balance, quote_balance = balance.main(coin)
@@ -185,7 +185,7 @@ def start():
         else:
             symbol_Instrument = BTC
             price = tickers.main(symbol)
-            min_order_abs = math.ceil(price/10)
+            min_order_abs = float(math.ceil(price/10))
             print("minimum order size: {}".format(str(min_order_abs)))
             if not(config["train"]):
                 usdt_balance, quote_balance = balance.main(coin)
