@@ -395,4 +395,4 @@ if __name__ == "__main__":
 
     # tensorboard --logdir=/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/ray_results/PPO
     # python core.py --alg PPO --symbol "DOGE/USDT" --num_cpus 4 --framework torch --stop_iters 200
-    # python core.py --alg PPO --symbol "DOGE/USDT" --num_cpus 4 --framework torch --stop_iters 300 --as_test
+    # python core.py --alg PPO --symbol "DOGE/USDT" --num_cpus 4 --framework torch --stop_iters 200 --as_test
