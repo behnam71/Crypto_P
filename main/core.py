@@ -192,7 +192,7 @@ def start():
         asset = Wallet(binance, quote_balance * symbol_Instrument)
         portfolio = Portfolio(USDT, [
             cash,
-            asset
+            asset,
         ])
         
         # === OBSERVER ===
@@ -222,7 +222,7 @@ def start():
         reward_scheme = RiskAdjustedReturns(return_algorithm='sharpe',
                                             risk_free_rate=0,
                                             target_returns=0,
-                                            window_size=config["window_size"]
+                                            window_size=config["window_size"],
                                             )
 
         # === ACTIONSCHEME ===
@@ -232,7 +232,7 @@ def start():
             take = [0.03],
             durations=[100],
             trade_sizes=10,
-            min_order_abs=min_order_abs
+            min_order_abs=min_order_abs,
         )
 
         # === RENDERER ===
@@ -261,7 +261,7 @@ def start():
             renderers=[
                 ScreenLogger,
                 chart_renderer
-            ]
+            ],
         )
 
         return env
@@ -278,7 +278,7 @@ def start():
         max_t=100,
         grace_period=10,
         reduction_factor=3,
-        brackets=1
+        brackets=1,
     )
 
     if not ray.is_initialized():
@@ -293,7 +293,7 @@ def start():
             args.alg,
             # https://docs.ray.io/en/master/tune/api_docs/stoppers.html
             stop = {
-                #"training_iteration": maxIter,
+                "training_iteration": maxIter,
                 #"timesteps_total": args.stop_timesteps,
                 "episode_reward_mean": args.stop_reward,
             },
@@ -301,10 +301,10 @@ def start():
             checkpoint_at_end=True,
             checkpoint_freq=1, # Necesasry to declare, in combination with Stopper
             checkpoint_score_attr="episode_reward_mean",
-            #restore="~/ray_results/PPO",
             #resume=True,
+            #restore="./ray_results/PPO",
             local_dir="./ray_results",
-            #scheduler=asha_scheduler,
+            scheduler=asha_scheduler,
             #max_failures=5,
         )
 
@@ -321,7 +321,7 @@ def start():
         checkpoint_path = analysis.get_best_checkpoint(
             trial="/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/ray_results/PPO/PPO_TradingEnv_a8ab8_00000_0_2021-08-06_16-43-07",
             metric="episode_reward_mean",
-            mode="max"
+            mode="max",
         ) 
         print("Checkpoint Path at: {}".format(str(checkpoint_path)))
 
@@ -346,7 +346,7 @@ def start():
         test_env = create_env({
             "window_size": window_size,
             "max_allowed_loss": max_allowed_loss,
-            "train": False
+            "train": False,
         })
 
         # === Render the environments (online) ===
@@ -387,5 +387,5 @@ if __name__ == "__main__":
     start()
 
     # tensorboard --logdir=/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/ray_results/PPO
-    # python core.py --alg PPO --symbol "DOGE/USDT" --stop_reward 4.05549e+6 --num_cpus 4 --framework torch
-    # python core.py --alg PPO --symbol "DOGE/USDT" --stop_reward 4.05549e+6 --num_cpus 4 --framework torch --as_test
+    # python core.py --alg PPO --symbol "DOGE/USDT" --stop_reward 4.05549e+6 --num_cpus 4 --framework torch --stop_iters 600
+    # python core.py --alg PPO --symbol "DOGE/USDT" --stop_reward 4.05549e+6 --num_cpus 4 --framework torch --stop_iters 600 --as_test
