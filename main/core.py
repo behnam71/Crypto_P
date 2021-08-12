@@ -104,7 +104,7 @@ def start():
         "env_config" : {
             "window_size" : window_size,
             "max_allowed_loss" : max_allowed_loss,
-            "train" : not(args.as_test),
+            "train" : not(args.as_test)
         },
         # === RLLib parameters ===
         # https://docs.ray.io/en/master/rllib-training.html#common-parameters
@@ -138,7 +138,7 @@ def start():
             "custom_model": "rnn",
             "max_seq_len": 20,
             "custom_model_config": {
-                "cell_size": 32,
+                "cell_size": 32
             },
         },
         "framework": args.framework,
@@ -192,7 +192,7 @@ def start():
         asset = Wallet(binance, quote_balance * symbol_Instrument)
         portfolio = Portfolio(USDT, [
             cash,
-            asset,
+            asset
         ])
         
         # === OBSERVER ===
@@ -222,7 +222,7 @@ def start():
         reward_scheme = RiskAdjustedReturns(return_algorithm='sharpe',
                                             risk_free_rate=0,
                                             target_returns=0,
-                                            window_size=config["window_size"],
+                                            window_size=config["window_size"]
                                             )
 
         # === ACTIONSCHEME ===
@@ -232,7 +232,7 @@ def start():
             take = [0.03],
             durations=[100],
             trade_sizes=10,
-            min_order_abs=min_order_abs,
+            min_order_abs=min_order_abs
         )
 
         # === RENDERER ===
@@ -240,7 +240,7 @@ def start():
             display=True, # show the chart on screen (default)
             height=800, # affects both displayed and saved file height. None for 100% height.
             save_format="html", # save the chart to an HTML file
-            auto_open_html=True, # open the saved HTML chart in a new browser tab
+            auto_open_html=True # open the saved HTML chart in a new browser tab
         )
         # Uses the OHCLV data passed to envData
         renderer_feed = DataFeed([
@@ -261,7 +261,7 @@ def start():
             renderers=[
                 ScreenLogger,
                 chart_renderer
-            ],
+            ]
         )
 
         return env
@@ -278,7 +278,7 @@ def start():
         max_t=100,
         grace_period=10,
         reduction_factor=3,
-        brackets=1,
+        brackets=1
     )
 
     if not ray.is_initialized():
@@ -294,8 +294,8 @@ def start():
             # https://docs.ray.io/en/master/tune/api_docs/stoppers.html
             stop = {
                 "training_iteration": maxIter,
-                #"timesteps_total": args.stop_timesteps,
                 "episode_reward_mean": args.stop_reward,
+                #"timesteps_total": args.stop_timesteps
             },
             config=config,
             checkpoint_at_end=True,
@@ -305,7 +305,7 @@ def start():
             #restore="./ray_results/PPO",
             local_dir="./ray_results",
             scheduler=asha_scheduler,
-            #max_failures=5,
+            #max_failures=5
         )
 
         #if args.as_test:
@@ -321,7 +321,7 @@ def start():
         checkpoint_path = analysis.get_best_checkpoint(
             trial="/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/ray_results/PPO/PPO_TradingEnv_a8ab8_00000_0_2021-08-06_16-43-07",
             metric="episode_reward_mean",
-            mode="max",
+            mode="max"
         ) 
         print("Checkpoint Path at: {}".format(str(checkpoint_path)))
 
@@ -346,7 +346,7 @@ def start():
         test_env = create_env({
             "window_size": window_size,
             "max_allowed_loss": max_allowed_loss,
-            "train": False,
+            "train": False
         })
 
         # === Render the environments (online) ===
@@ -366,7 +366,7 @@ def render_env(env, agent):
     while not done:
         action, state, _ = agent.compute_action(
             obs,
-            state=state,
+            state=state
         )
         print("\nSelected Action: {}".format(str(action)))
         obs = env.step(action)
