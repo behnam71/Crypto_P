@@ -75,7 +75,7 @@ parser.add_argument(
     "be achieved within --stop-timesteps AND --stop-iters.")
 
 def data_loading():
-    #candles = BinanceData
+    #candles = BinanceData.main()
     candles = pd.read_csv('/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/binance_DOGE.csv', sep=',', low_memory=False, index_col=[0])
     return candles
 
@@ -83,7 +83,7 @@ def start():
     args = parser.parse_args()
 
     # Declare when training can stop & Never more than 200
-    maxIter = 120
+    maxIter = args.stop_iters
 
     # === TRADING ENVIRONMENT CONFIG === 
     # Lookback window for the TradingEnv
@@ -179,7 +179,7 @@ def start():
             if not(config["train"]):
                 usdt_balance, quote_balance = balance.main(coin)
             else:
-                usdt_balance = 1000
+                usdt_balance = 100000
                 quote_balance = 0
         else:
             symbol_Instrument = BTC
@@ -189,7 +189,7 @@ def start():
             if not(config["train"]):
                 usdt_balance, quote_balance = balance.main(coin)
             else:
-                usdt_balance = 1000
+                usdt_balance = 100000
                 quote_balance = 0
 
         cash = Wallet(binance, usdt_balance * USDT)
@@ -235,7 +235,7 @@ def start():
             stop = [0.02],
             take = [0.03],
             durations=[100],
-            trade_sizes=100,
+            trade_sizes=10,
             min_order_abs=min_order_abs
         )
 
@@ -294,13 +294,15 @@ def start():
         "rnn", TorchRNNModel if args.framework == "torch" else RNNModel)
     # === tune.run for Training ===
     # https://docs.ray.io/en/master/tune/api_docs/execution.html
+    print("2222222222222222222222222222222222")
+    print(config['maxIter'])
     if not(args.as_test):
         analysis = tune.run(
             args.alg,
             # https://docs.ray.io/en/master/tune/api_docs/stoppers.html
             stop = {
                 "training_iteration": args.stop_iters,
-                "timesteps_total": args.stop_timesteps,
+                #"timesteps_total": args.stop_timesteps,
                 #"episode_reward_mean": args.stop_reward,
             },
             config=config,
@@ -393,5 +395,5 @@ if __name__ == "__main__":
     start()
 
     # tensorboard --logdir=/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/ray_results/PPO
-    # python core.py --alg PPO --symbol "DOGE/USDT" --num_cpus 4 --framework torch --stop_iters 120
-    # python core.py --alg PPO --symbol "DOGE/USDT" --num_cpus 4 --framework torch --stop_iters 120 --as_test
+    # python core.py --alg PPO --symbol "DOGE/USDT" --num_cpus 4 --framework torch --stop_iters 200
+    # python core.py --alg PPO --symbol "DOGE/USDT" --num_cpus 4 --framework torch --stop_iters 300 --as_test
