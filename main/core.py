@@ -109,7 +109,7 @@ def start():
         # https://docs.ray.io/en/master/rllib-training.html#common-parameters
         # === Settings for Rollout Worker processes ===
         # Number of rollout worker actors to create for parallel sampling.
-        "num_workers" : args.num_cpus - 1, # Amount of CPU cores - 1
+        "num_workers" : args.num_cpus - 3, # Amount of CPU cores - 1
         "num_envs_per_worker": 1,
         
         "num_sgd_iter": 5,
@@ -174,7 +174,7 @@ def start():
         if symbol == 'DOGE/USDT':
             symbol_Instrument = DOGE
             price = tickers.main(symbol)
-            min_order_abs = price * 10
+            min_order_abs = round(price*10, 2)
             print("minimum order size: {}".format(str(min_order_abs)))
             if not(config["train"]):
                 usdt_balance, quote_balance = balance.main(coin)
@@ -184,7 +184,7 @@ def start():
         else:
             symbol_Instrument = BTC
             price = tickers.main(symbol)
-            min_order_abs = price / 1000
+            min_order_abs = round(price/10, 2)
             print("minimum order size: {}".format(str(min_order_abs)))
             if not(config["train"]):
                 usdt_balance, quote_balance = balance.main(coin)
