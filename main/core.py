@@ -294,14 +294,12 @@ def start():
         "rnn", TorchRNNModel if args.framework == "torch" else RNNModel)
     # === tune.run for Training ===
     # https://docs.ray.io/en/master/tune/api_docs/execution.html
-    print("2222222222222222222222222222222222")
-    print(config['maxIter'])
     if not(args.as_test):
         analysis = tune.run(
             args.alg,
             # https://docs.ray.io/en/master/tune/api_docs/stoppers.html
             stop = {
-                "training_iteration": args.stop_iters,
+                "training_iteration": maxIter,
                 #"timesteps_total": args.stop_timesteps,
                 #"episode_reward_mean": args.stop_reward,
             },
