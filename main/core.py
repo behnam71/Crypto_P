@@ -3,14 +3,15 @@ import argparse
 import os
 import pandas as pd
 from IPython.display import display
+import math  
 
 #import tensorflow as tf
 
 import ray
+import ray.rllib.agents.ppo as ppo
 from ray.rllib.examples.models.rnn_model import RNNModel, TorchRNNModel
 from ray.rllib.models import ModelCatalog
 from ray.rllib.utils.test_utils import check_learning_achieved
-import ray.rllib.agents.ppo as ppo
 #import ray.rllib.agents.dqn as dqn
 #import ray.rllib.agents.a3c.a2c as a2c
 from ray.tune.registry import register_env
@@ -174,7 +175,7 @@ def start():
         if symbol == 'DOGE/USDT':
             symbol_Instrument = DOGE
             price = tickers.main(symbol)
-            min_order_abs = round(price*10, 2)
+            min_order_abs = math.ceil(price*10)
             print("minimum order size: {}".format(str(min_order_abs)))
             if not(config["train"]):
                 usdt_balance, quote_balance = balance.main(coin)
@@ -184,7 +185,7 @@ def start():
         else:
             symbol_Instrument = BTC
             price = tickers.main(symbol)
-            min_order_abs = round(price/10, 2)
+            min_order_abs = math.ceil(price/10)
             print("minimum order size: {}".format(str(min_order_abs)))
             if not(config["train"]):
                 usdt_balance, quote_balance = balance.main(coin)
