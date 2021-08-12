@@ -387,5 +387,5 @@ if __name__ == "__main__":
     start()
 
     # tensorboard --logdir=/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/ray_results/PPO
-    # python core.py --alg PPO --symbol "DOGE/USDT" --stop_reward 10000 --num_cpus 4 --framework torch
-    # python core.py --alg PPO --symbol "DOGE/USDT" --stop_reward 10000 --num_cpus 4 --framework torch --as_test
+    # python core.py --alg PPO --symbol "DOGE/USDT" --stop_reward 4.05549e+6 --num_cpus 4 --framework torch
+    # python core.py --alg PPO --symbol "DOGE/USDT" --stop_reward 4.05549e+6 --num_cpus 4 --framework torch --as_test
