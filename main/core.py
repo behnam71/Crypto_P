@@ -77,7 +77,7 @@ parser.add_argument(
 
 def data_loading():
     #candles = BinanceData.main()
-    candles = pd.read_csv('/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/binance_DOGE.csv', sep=',', low_memory=False, index_col=[0])
+    candles = pd.read_csv('./crypto-v2/binance_DOGE.csv', sep=',', low_memory=False, index_col=[0])
     return candles
 
 def start():
@@ -90,7 +90,7 @@ def start():
     # Lookback window for the TradingEnv
     # Increasing this too much can result in errors and overfitting, also increases the duration necessary for training
     # Value needs to be bigger than 1, otherwise it will take nothing in consideration
-    window_size = 12
+    window_size = 6
 
     # 1 meaning he cant lose anything 0 meaning it can lose everything
     # Setting a high value results in quicker training time, but could result in overfitting
@@ -119,7 +119,8 @@ def start():
         "gamma" : 0, # default = 0.99
         
         # Use GPUs iff "RLLIB_NUM_GPUS" env var set to > 0.
-        "num_gpus": int(os.environ.get("RLLIB_NUM_GPUS", "0")),
+        #"num_gpus": int(os.environ.get("RLLIB_NUM_GPUS", "0")),
+        "num_gpus": 1,
                 
         #"lr" : 0.01, # default = 0.00005 && Higher lr fits training model better, but causes overfitting 
         #"clip_rewards": True, 
@@ -161,7 +162,7 @@ def start():
 
         # === EXCHANGE ===
         # Commission on Binance is 0.075% on the lowest level, using BNB (https://www.binance.com/en/fee/schedule)
-        binance_options = ExchangeOptions(commission=0.0075)
+        binance_options = ExchangeOptions(commission=0.001)
         binance = Exchange("binance", service=execute_order, t_signal=config["train"], options=binance_options)(
             p
         )
@@ -169,8 +170,8 @@ def start():
         # === ORDER MANAGEMENT SYSTEM ===
         if symbol == 'DOGE/USDT':
             symbol_Instrument = DOGE
-            price = tickers.main(symbol)
-            min_order_abs = float(math.ceil(price*10))
+            #price = tickers.main(symbol)
+            min_order_abs = 10
             print("minimum order size: {}".format(str(min_order_abs)))
             if not(config["train"]):
                 usdt_balance, quote_balance = balance.main(coin)
@@ -179,8 +180,8 @@ def start():
                 quote_balance = 0
         else:
             symbol_Instrument = BTC
-            price = tickers.main(symbol)
-            min_order_abs = float(math.ceil(price/10))
+            #price = tickers.main(symbol)
+            min_order_abs = 10
             print("minimum order size: {}".format(str(min_order_abs)))
             if not(config["train"]):
                 usdt_balance, quote_balance = balance.main(coin)
@@ -197,7 +198,7 @@ def start():
         
         # === OBSERVER ===
         dataset = pd.DataFrame()
-        with open("/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/indicators.txt", "r") as file:
+        with open("./crypto-v2/indicators.txt", "r") as file:
             indicators_list = eval(file.readline())
         TAlib_Indicator = TAlibIndicator(indicators_list)
         dataset = TAlib_Indicator.transform(ta_Data)
@@ -258,6 +259,7 @@ def start():
             enable_logger=True,
             t_signal=config["train"],
             renderer_feed=renderer_feed,
+            renderer= PlotlyTradingChart(), # PositionChangeChart()
             renderers=[
                 ScreenLogger,
                 chart_renderer
@@ -282,7 +284,8 @@ def start():
     )
 
     if not ray.is_initialized():
-        ray.init(local_mode=True)
+       #ray.init(num_cpus=args.num_cpus or None, local_mode=True)
+       ray.init(num_gpus=1) # Skip or set to ignore if already called
 
     ModelCatalog.register_custom_model(
         "rnn", TorchRNNModel if args.framework == "torch" else RNNModel)
@@ -303,8 +306,8 @@ def start():
             checkpoint_score_attr="episode_reward_mean",
             #resume=True,
             #restore="./ray_results/PPO",
-            local_dir="./ray_results",
-            scheduler=asha_scheduler,
+            local_dir="./crypto-v1/ray_results",
+            #scheduler=asha_scheduler,
             #max_failures=5
         )
 
@@ -387,5 +390,5 @@ if __name__ == "__main__":
     start()
 
     # tensorboard --logdir=/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/ray_results/PPO
-    # python core.py --alg PPO --symbol "DOGE/USDT" --stop_reward 4.05549e+6 --num_cpus 4 --framework torch --stop_iters 600
-    # python core.py --alg PPO --symbol "DOGE/USDT" --stop_reward 4.05549e+6 --num_cpus 4 --framework torch --stop_iters 600 --as_test
+    # python core.py --alg PPO --symbol "DOGE/USDT" --stop_reward 4.05549e+6 --num_cpus 4 --framework torch --stop_iters 200
+    # python core.py --alg PPO --symbol "DOGE/USDT" --stop_reward 4.05549e+6 --num_cpus 4 --framework torch --stop_iters 200 --as_test
