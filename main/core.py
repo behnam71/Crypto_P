@@ -178,7 +178,7 @@ def start():
             print("minimum order size: {}".format(str(min_order_abs)))
             if not(config["train"]):
                 #usdt_balance, quote_balance = balance.main(coin)
-                usdt_balance = 70; quote_balance = 0
+                usdt_balance = 50; quote_balance = 0
             else:
                 usdt_balance = 100000; quote_balance = 0
         else:
@@ -188,7 +188,7 @@ def start():
             print("minimum order size: {}".format(str(min_order_abs)))
             if not(config["train"]):
                 #usdt_balance, quote_balance = balance.main(coin)
-                usdt_balance = 70; quote_balance = 0
+                usdt_balance = 50; quote_balance = 0
             else:
                 usdt_balance = 100000; quote_balance = 0
 
