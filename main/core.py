@@ -77,7 +77,10 @@ parser.add_argument(
 
 def data_loading():
     #candles = BinanceData.main()
-    candles = pd.read_csv('./crypto-v2/binance_DOGE.csv', sep=',', low_memory=False, index_col=[0])
+    candles = pd.read_csv('/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/crypto_v2/binance_DOGE.csv', 
+                          sep=',', 
+                          low_memory=False, 
+                          index_col=[0])
     return candles
 
 def start():
@@ -119,8 +122,8 @@ def start():
         "gamma" : 0, # default = 0.99
         
         # Use GPUs iff "RLLIB_NUM_GPUS" env var set to > 0.
-        #"num_gpus": int(os.environ.get("RLLIB_NUM_GPUS", "0")),
-        "num_gpus": 1,
+        "num_gpus": int(os.environ.get("RLLIB_NUM_GPUS", "0")),
+        #"num_gpus": 1,
                 
         #"lr" : 0.01, # default = 0.00005 && Higher lr fits training model better, but causes overfitting 
         #"clip_rewards": True, 
@@ -174,20 +177,20 @@ def start():
             min_order_abs = 10
             print("minimum order size: {}".format(str(min_order_abs)))
             if not(config["train"]):
-                usdt_balance, quote_balance = balance.main(coin)
+                #usdt_balance, quote_balance = balance.main(coin)
+                usdt_balance = 70; quote_balance = 0
             else:
-                usdt_balance = 100000
-                quote_balance = 0
+                usdt_balance = 100000; quote_balance = 0
         else:
             symbol_Instrument = BTC
             #price = tickers.main(symbol)
             min_order_abs = 10
             print("minimum order size: {}".format(str(min_order_abs)))
             if not(config["train"]):
-                usdt_balance, quote_balance = balance.main(coin)
+                #usdt_balance, quote_balance = balance.main(coin)
+                usdt_balance = 70; quote_balance = 0
             else:
-                usdt_balance = 100000
-                quote_balance = 0
+                usdt_balance = 100000; quote_balance = 0
 
         cash = Wallet(binance, usdt_balance * USDT)
         asset = Wallet(binance, quote_balance * symbol_Instrument)
@@ -198,7 +201,7 @@ def start():
         
         # === OBSERVER ===
         dataset = pd.DataFrame()
-        with open("./crypto-v2/indicators.txt", "r") as file:
+        with open("/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/crypto_v2/indicators.txt", "r") as file:
             indicators_list = eval(file.readline())
         TAlib_Indicator = TAlibIndicator(indicators_list)
         dataset = TAlib_Indicator.transform(ta_Data)
@@ -284,8 +287,8 @@ def start():
     )
 
     if not ray.is_initialized():
-       #ray.init(num_cpus=args.num_cpus or None, local_mode=True)
-       ray.init(num_gpus=1) # Skip or set to ignore if already called
+       ray.init(num_cpus=args.num_cpus or None, local_mode=True)
+       #ray.init(num_gpus=1) # Skip or set to ignore if already called
 
     ModelCatalog.register_custom_model(
         "rnn", TorchRNNModel if args.framework == "torch" else RNNModel)
@@ -305,8 +308,8 @@ def start():
             checkpoint_freq=1, # Necesasry to declare, in combination with Stopper
             checkpoint_score_attr="episode_reward_mean",
             #resume=True,
-            #restore="./ray_results/PPO",
-            local_dir="./crypto-v1/ray_results",
+            #restore="/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/crypto_v2/ray_results/PPO",
+            local_dir="/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/crypto_v2/crypto-v1/ray_results",
             #scheduler=asha_scheduler,
             #max_failures=5
         )
@@ -320,9 +323,9 @@ def start():
         # https://docs.ray.io/en/master/tune/api_docs/analysis.html
         # Get checkpoint based on highest episode_reward_mean
         from ray.tune import Analysis
-        analysis = Analysis("/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/ray_results/PPO")
+        analysis = Analysis("/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/crypto_v2/ray_results/PPO")
         checkpoint_path = analysis.get_best_checkpoint(
-            trial="/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/ray_results/PPO/PPO_TradingEnv_a8ab8_00000_0_2021-08-06_16-43-07",
+            trial="/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/crypto_v2/ray_results/PPO/PPO_TradingEnv_77cab_00000_0_2021-08-14_08-13-12",
             metric="episode_reward_mean",
             mode="max"
         ) 
@@ -375,7 +378,7 @@ def render_env(env, agent):
         obs = env.step(action)
 
     # Render the test environment
-    env.render()
+    #env.render()
 
 # === CALLBACK ===
 def get_net_worth(info):
@@ -391,4 +394,4 @@ if __name__ == "__main__":
 
     # tensorboard --logdir=/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/ray_results/PPO
     # python core.py --alg PPO --symbol "DOGE/USDT" --stop_reward 4.05549e+6 --num_cpus 4 --framework torch --stop_iters 200
-    # python core.py --alg PPO --symbol "DOGE/USDT" --stop_reward 4.05549e+6 --num_cpus 4 --framework torch --stop_iters 200 --as_test
+    # python core.py --alg PPO --symbol "DOGE/USDT" --num_cpus 4 --framework torch --as_test
