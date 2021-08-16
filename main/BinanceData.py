@@ -58,7 +58,7 @@ def write_to_csv(filename, data):
         inplace=True
     )
     db = db.reset_index(drop=True)
-    filename = "db_{}".format(filename)
+    filename = "./database/db_{}".format(filename)
     db.to_csv(filename)
 
 def scrape_candles_to_csv(filename, exchange_id, max_retries, symbol, timeframe, since, limit):
@@ -77,7 +77,7 @@ def scrape_candles_to_csv(filename, exchange_id, max_retries, symbol, timeframe,
     )
     # save them to csv file
     write_to_csv(filename, ohlcv)
-    print('Saved', len(ohlcv), 'candles from', exchange.iso8601(ohlcv[0][0]), 'to', exchange.iso8601(ohlcv[-1][0]), 'to', filename)
+    print('Saved', len(ohlcv), 'candles from', exchange.iso8601(ohlcv[0][0]), 'to', exchange.iso8601(ohlcv[-1][0]))
 
 def main():
     # Binance's BTC/USDT candles start on 2017-08-17
