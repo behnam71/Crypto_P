@@ -43,10 +43,23 @@ def scrape_ohlcv(exchange, max_retries, symbol, timeframe, since, limit):
     return exchange.filter_by_since_limit(all_ohlcv, since, None, key=0)
 
 def write_to_csv(filename, data):
-    dataset = pd.DataFrame(data, columns = ['date', 'open', 'high', 'low', 'close', 'volume'])
-    dataset['date'] = pd.to_datetime(dataset['date'], unit='ms')
-    dataset.reset_index(drop=True)
-    dataset.to_csv(filename)
+    X = pd.DataFrame(data, columns = ['date', 'open', 'high', 'low', 'close', 'volume'])
+    X['date'] = pd.to_datetime(X['date'], unit='ms')
+    X.reset_index(drop=True)
+    db = pd.read_csv('/mnt/c/Users/BEHNAMH721AS.RN/OneDrive/Desktop/database/db_{}'.format(filename), sep=',', low_memory=False, index_col=[0])
+    db = pd.concat(
+        [db, X],
+        ignore_index=True, 
+        sort=False
+    )
+    db.drop_duplicates(
+        subset=['date'], 
+        keep='first', 
+        inplace=True
+    )
+    db = db.reset_index(drop=True)
+    filename = "db_{}".format(filename)
+    db.to_csv(filename)
 
 def scrape_candles_to_csv(filename, exchange_id, max_retries, symbol, timeframe, since, limit):
     # instantiate the exchange by id
@@ -69,9 +82,9 @@ def scrape_candles_to_csv(filename, exchange_id, max_retries, symbol, timeframe,
 def main():
     # Binance's BTC/USDT candles start on 2017-08-17
     print("BTC data fetching:")
-    scrape_candles_to_csv('binance_BTC.csv', 'binance', 3, 'BTC/USDT', '4h', '2016-08-17T04:00:00Z', 100)
+    scrape_candles_to_csv('BTC.csv', 'binance', 3, 'BTC/USDT', '4h', '2016-08-17T04:00:00Z', 100)
     print("\nDOGE data fetching:")
-    scrape_candles_to_csv('binance_DOGE.csv', 'binance', 3, 'DOGE/USDT', '4h', '2018-08-17T04:00:00Z', 100)
+    scrape_candles_to_csv('DOGE.csv', 'binance', 3, 'DOGE/USDT', '4h', '2018-08-17T04:00:00Z', 100)
 
 
 if __name__ == "__main__":
