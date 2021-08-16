@@ -45,8 +45,7 @@ class TAlibIndicator():
             sort=False
         )
         self.db.drop_duplicates(subset=['date'], 
-                                keep='first', 
-                                inplace=True)
+                                keep='first', inplace=True)
         self.db = self.db.reset_index(drop=True)
 
         for idx, indicator in enumerate(self._indicators):
@@ -67,5 +66,4 @@ class TAlibIndicator():
             else:
                 X[indicator_name] = indicator(*indicator_args, **indicator_params)
 
-        self.db = self.db.reset_index(drop=True)
         return X
